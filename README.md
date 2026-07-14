@@ -19,12 +19,16 @@
 
 安装模型：
 
-1. 解压 Release ZIP
-2. 将完整模型复制到 `dist/live2d/model/`，保持模型内部相对目录不变
-3. 重新压缩根目录中的 `dist/`、`komari-theme.json` 和 `preview.png`
-4. 上传主题，在主题设置中启用 `Live2D 看板娘`，填写入口路径，例如 `/live2d/model/model.model3.json`
+1. 下载 `komari-live2d-model-pack-template.zip` 并解压。
+2. 将完整 Cubism 3/4 模型复制到资源包的 `dist/model/`，保持模型内部相对目录不变。
+3. 重新压缩根目录中的 `dist/`、`komari-theme.json` 和 `preview.png`，不要额外包一层父目录。
+4. 在 Komari 主题管理中上传资源包。该包的标识为 `komari-live2d-models`，请勿将它设为当前主题，也请勿删除。
+5. 安装并启用正常的 Komari Naive Extended 主主题。
+6. 在主主题设置中启用看板娘并填写入口，例如 `/themes/komari-live2d-models/dist/model/model.model3.json`。嵌套入口同样受支持。
 
-Release 默认不包含任何角色模型。请仅部署你有权公开展示的模型；纹理内存与目录要求见压缩包中的 `dist/live2d/model/README.txt`。
+模型资源包只需首次安装。之后更新主主题只会替换 `NaiveExtended` 主题目录，不会删除独立的 `komari-live2d-models` 模型资源；重新上传或删除资源包才会替换或移除模型。
+
+资源包模板不包含任何角色模型。请仅部署你有权公开展示的模型；纹理内存与目录要求见资源包中的 `dist/model/README.txt`。资源包由 Komari 原生 `/themes/:id/*path` 静态路由提供，因此 Docker、1Panel、宝塔、systemd、二进制运行和反向代理部署均不需要额外路径配置。Komari 返回静态模型文件时会产生与文件大小相关的单次瞬时内存占用；压缩包体积不代表浏览器解码后的纹理内存，建议纹理不超过 2048x2048 并移除不需要的动作和声音。
 
 首次问候会由访客浏览器直接请求 `https://api64.ipify.org?format=json` 获取公网 IP。ipify 会接触该 IP；主题和 Komari 不会保存 IP，只在当前浏览器会话中保存“已问候”和“已关闭”标记。模型或 IP 服务失败不会影响探针页面。
 

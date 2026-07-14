@@ -22,12 +22,20 @@ test('keeps character models and model guidance out of the main theme', async ()
   assert.match(guide, /2048.*16 MiB/s)
 })
 
-test('documents the browser-side IP disclosure and no-backend boundary', async () => {
+test('documents one-time model-pack installation and the no-backend boundary', async () => {
   const readme = await text('README.md')
+  assert.match(readme, /komari-live2d-model-pack-template\.zip/)
+  assert.match(readme, /komari-live2d-models/)
+  assert.match(readme, /\/themes\/komari-live2d-models\/dist\/model\/model\.model3\.json/)
+  assert.match(readme, /更新主主题.*不会.*模型/s)
+  assert.match(readme, /请勿.*当前主题/)
+  assert.match(readme, /请勿删除/)
   assert.match(readme, /api64\.ipify\.org/)
   assert.match(readme, /不会.*保存.*IP/)
   assert.match(readme, /不修改 Komari 后端/)
-  assert.match(readme, /dist\/live2d\/model\//)
+  assert.match(readme, /\/themes\/:id\/\*path/)
+  assert.match(readme, /瞬时内存/)
+  assert.doesNotMatch(readme, /dist\/live2d\/model/)
 })
 
 test('ships an official Cubism Core runtime with third-party notice', async () => {
