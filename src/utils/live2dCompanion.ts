@@ -6,6 +6,8 @@ export const LIVE2D_MESSAGES = [
 ] as const
 export const LIVE2D_FOCUS_X_AMPLITUDE = 0.35
 export const LIVE2D_FOCUS_Y_AMPLITUDE = 0.22
+export const LIVE2D_MODEL_PACK_PREFIX = '/themes/komari-live2d-models/dist/model/'
+export const DEFAULT_LIVE2D_MODEL_PATH = `${LIVE2D_MODEL_PACK_PREFIX}model.model3.json`
 
 export type Live2DProfileName = 'desktop' | 'touch'
 
@@ -141,19 +143,45 @@ export function supportsLive2DWebGL(
 }
 
 function hasUnsafeTraversal(path: string): boolean {
-  if (!path || path.includes('\\'))
+  if (!path)
     return true
   try {
     const decoded = decodeURIComponent(path)
-    return decoded.split('/').includes('..')
+    return decoded.includes('\\') || decoded.split('/').includes('..')
   }
   catch {
     return true
   }
 }
 
+export function isValidLive2DModelPath(value: unknown): value is string {
+  if (typeof value !== 'string' || value !== value.trim() || hasUnsafeTraversal(value))
+    return false
+  try {
+    const base = new URL('https://komari.invalid/')
+    const resolved = new URL(value, base)
+    return resolved.origin === base.origin
+      && !resolved.username
+      && !resolved.password
+      && !resolved.search
+      && !resolved.hash
+      && resolved.pathname.startsWith(LIVE2D_MODEL_PACK_PREFIX)
+      && resolved.pathname.toLowerCase().endsWith('.model3.json')
+  }
+  catch {
+    return false
+  }
+}
+
+export function normalizeLive2DModelPath(value: unknown): string {
+  if (typeof value !== 'string')
+    return DEFAULT_LIVE2D_MODEL_PATH
+  const path = value.trim()
+  return isValidLive2DModelPath(path) ? path : DEFAULT_LIVE2D_MODEL_PATH
+}
+
 export function resolveLive2DModelPath(path: string, origin: string): URL | null {
-  if (typeof path !== 'string' || hasUnsafeTraversal(path))
+  if (!isValidLive2DModelPath(path))
     return null
 
   try {
@@ -163,10 +191,6 @@ export function resolveLive2DModelPath(path: string, origin: string): URL | null
       resolved.origin !== base.origin
       || resolved.username
       || resolved.password
-      || resolved.search
-      || resolved.hash
-      || !resolved.pathname.startsWith('/live2d/')
-      || !resolved.pathname.toLowerCase().endsWith('.model3.json')
     ) {
       return null
     }
@@ -182,8 +206,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isSafeModelReference(reference: unknown, modelUrl: URL): boolean {
-  if (typeof reference !== 'string' || hasUnsafeTraversal(reference))
+  if (
+    typeof reference !== 'string'
+    || reference.startsWith('/')
+    || reference.startsWith('//')
+    || /^[a-z][a-z\d+.-]*:/i.test(reference)
+    || hasUnsafeTraversal(reference)
+  ) {
     return false
+  }
   try {
     const modelDirectory = new URL('.', modelUrl)
     const resolved = new URL(reference, modelUrl)

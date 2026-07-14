@@ -82,20 +82,42 @@ test('probes WebGL without retaining the temporary context', () => {
   })), false)
 })
 
-test('accepts same-origin model paths and rejects remote or traversing paths', () => {
+test('accepts only model entries inside the fixed Live2D resource pack', () => {
   assert.equal(
-    core.resolveLive2DModelPath('/live2d/model/XFZN.model3.json', 'https://site.test')?.href,
-    'https://site.test/live2d/model/XFZN.model3.json',
+    core.resolveLive2DModelPath(
+      '/themes/komari-live2d-models/dist/model/chino/XFZN.model3.json',
+      'https://site.test',
+    )?.href,
+    'https://site.test/themes/komari-live2d-models/dist/model/chino/XFZN.model3.json',
   )
+  assert.equal(
+    core.resolveLive2DModelPath(
+      '/themes/komari-live2d-models/dist/model/智乃/看板娘.model3.json',
+      'https://site.test',
+    )?.pathname,
+    '/themes/komari-live2d-models/dist/model/%E6%99%BA%E4%B9%83/%E7%9C%8B%E6%9D%BF%E5%A8%98.model3.json',
+  )
+  assert.equal(core.resolveLive2DModelPath('/live2d/model/model.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/themes/other/dist/model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('https://evil.test/model.model3.json', 'https://site.test'), null)
-  assert.equal(core.resolveLive2DModelPath('/live2d/model/../runtime/model.model3.json', 'https://site.test'), null)
-  assert.equal(core.resolveLive2DModelPath('/live2d/model/%2e%2e/runtime/model.model3.json', 'https://site.test'), null)
-  assert.equal(core.resolveLive2DModelPath('/assets/model.model3.json', 'https://site.test'), null)
-  assert.equal(core.resolveLive2DModelPath('/live2d/model/model.model3.json?remote=1', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/../x.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/%2e%2e/x.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/a%5cb.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/model.model3.json?x=1', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/model.model3.json#x', 'https://site.test'), null)
+})
+
+test('normalizes invalid model-pack settings to the fixed default', () => {
+  assert.equal(
+    core.normalizeLive2DModelPath('/themes/komari-live2d-models/dist/model/chino/chino.model3.json'),
+    '/themes/komari-live2d-models/dist/model/chino/chino.model3.json',
+  )
+  assert.equal(core.normalizeLive2DModelPath('/live2d/model/model.model3.json'), core.DEFAULT_LIVE2D_MODEL_PATH)
+  assert.equal(core.normalizeLive2DModelPath(null), core.DEFAULT_LIVE2D_MODEL_PATH)
 })
 
 test('validates every supported model reference inside the model directory', () => {
-  const modelUrl = new URL('https://site.test/live2d/model/XFZN.model3.json')
+  const modelUrl = new URL('https://site.test/themes/komari-live2d-models/dist/model/chino/XFZN.model3.json')
   const valid = {
     FileReferences: {
       Moc: 'XFZN.moc3',
@@ -117,10 +139,18 @@ test('validates every supported model reference inside the model directory', () 
     'FileReferences.Expressions[0].File',
     'FileReferences.Motions.Idle[0].Sound',
   ])
+
+  const absoluteReference = structuredClone(valid)
+  absoluteReference.FileReferences.Textures = [
+    '/themes/komari-live2d-models/dist/model/chino/XFZN.2048/texture_00.png',
+  ]
+  assert.deepEqual(core.validateLive2DModelDocument(absoluteReference, modelUrl), [
+    'FileReferences.Textures[0]',
+  ])
 })
 
 test('requires a moc and at least one texture', () => {
-  const modelUrl = new URL('https://site.test/live2d/model/model.model3.json')
+  const modelUrl = new URL('https://site.test/themes/komari-live2d-models/dist/model/model.model3.json')
   assert.deepEqual(core.validateLive2DModelDocument({ FileReferences: { Textures: [] } }, modelUrl), [
     'FileReferences.Moc',
     'FileReferences.Textures',

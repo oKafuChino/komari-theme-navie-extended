@@ -4,6 +4,7 @@ import type { CurrencyCode } from '@/utils/residualValue'
 import { usePreferredDark, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { normalizeLive2DModelPath } from '@/utils/live2dCompanion'
 import { parseFallbackRates } from '@/utils/residualValue'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
@@ -39,8 +40,6 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   GB: 1,
   TB: 2,
 }
-
-const DEFAULT_LIVE2D_MODEL_PATH = '/live2d/model/model.model3.json'
 
 export function resolveBooleanThemeSetting(
   settings: Record<string, unknown> | null | undefined,
@@ -135,13 +134,7 @@ const useAppStore = defineStore('app', () => {
   })
 
   const live2dModelPath = computed<string>(() => {
-    const value = publicSettings.value?.theme_settings?.live2dModelPath
-    if (typeof value !== 'string')
-      return DEFAULT_LIVE2D_MODEL_PATH
-    const path = value.trim()
-    if (!path.startsWith('/live2d/') || !path.toLowerCase().endsWith('.model3.json'))
-      return DEFAULT_LIVE2D_MODEL_PATH
-    return path
+    return normalizeLive2DModelPath(publicSettings.value?.theme_settings?.live2dModelPath)
   })
 
   const live2dScale = computed<number>(() => {
