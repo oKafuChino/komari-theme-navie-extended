@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
-import { promisify } from 'node:util'
 import test from 'node:test'
+import { promisify } from 'node:util'
 
 const root = new URL('../', import.meta.url)
 const execFileAsync = promisify(execFile)
