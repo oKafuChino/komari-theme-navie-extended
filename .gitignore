@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store/
 .DS_Store
 dist
 dist-ssr
@@ -41,4 +42,7 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Theme build output
-komari-theme-naive-build-*.zip
+komari-theme-naive-extended-build-*.zip
+
+# Local brainstorming and performance baselines
+.superpowers/

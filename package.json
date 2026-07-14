@@ -1,13 +1,10 @@
 {
-  "name": "komari-theme-naive",
+  "name": "komari-theme-naive-extended",
   "type": "module",
-  "version": "1.1.1",
-  "author": {
-    "name": "lyimoexiao",
-    "email": "lyimoexiao@outlook.com",
-    "url": "https://github.com/lyimoexiao"
-  },
+  "version": "1.0.0",
+  "author": "lyimoexiao & oKafuChino",
   "license": "MIT",
+  "homepage": "https://github.com/oKafuChino/komari-theme-navie-extended",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
@@ -17,6 +14,7 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
+    "test:unit": "node --test --test-concurrency=1 tests/*.test.mjs",
     "lint": "run-s lint:oxlint lint:eslint",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache"

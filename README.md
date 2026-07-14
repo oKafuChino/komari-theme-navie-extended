@@ -1,15 +1,16 @@
-<h3 align="center"> Komari Naive </h3>
-<p align="center">基于 Vue 3 + Vite + Naive UI 构建的 Komari Monitor 主题
-</p>
-<a href="https://github.com/lyimoexiao/komari-theme-naive">
-<img src="docs/preview.png" alt="Komari Theme Naive" />
+<h3 align="center"> Komari Naive Extended </h3>
+<p align="center">基于 Vue 3 + Vite + Naive UI 构建的 Komari Monitor 扩展主题</p>
+<a href="https://github.com/oKafuChino/komari-theme-navie-extended">
+<img src="docs/preview.png" alt="Komari Naive Extended" />
 </a>
+
+本项目基于 [lyimoexiao/komari-theme-naive](https://github.com/lyimoexiao/komari-theme-naive) 开发，并保留原项目的 MIT 许可证与作者署名。
 
 ## 使用
 
-1. 从 [Release 页面](https://github.com/lyimoexiao/komari-theme-naive/releases) 下载最新的 `komari-theme-naive-build-*.zip` 文件
+1. 从 [Release 页面](https://github.com/oKafuChino/komari-theme-navie-extended/releases) 下载最新的 `komari-theme-naive-extended-build-*.zip` 文件
 2. 登录 Komari Monitor 后，点击 `设置`，选择 `主题管理` 选项卡
-3. 点击 `上传主题` 按钮，选择下载的 `komari-theme-naive-build-*.zip` 文件
+3. 点击 `上传主题` 按钮，选择下载的 `komari-theme-naive-extended-build-*.zip` 文件
 4. 刷新页面，即可看到新的主题
 
 ## 环境要求

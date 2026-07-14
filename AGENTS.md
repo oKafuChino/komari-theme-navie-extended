@@ -1,13 +1,13 @@
 # AGENTS.md
 
-Repo guide for `komari-theme-naive`.
+Repo guide for `komari-theme-naive-extended`.
 
 ## Snapshot
 
 - Generated: Fri Apr 03 2026, Asia/Shanghai
-- Branch: `master`
+- Branch: `main`
 - Commit: `30e2df1`
-- App: Vue 3 + Vite + Naive UI theme for Komari Monitor
+- App: Komari Naive Extended, a Vue 3 + Vite + Naive UI theme for Komari Monitor
 - Package manager: `pnpm`
 - Theme manifest: `komari-theme.json`
 
@@ -36,6 +36,7 @@ Run from repo root only.
 
 ```bash
 pnpm dev
+pnpm test:unit
 pnpm build
 pnpm preview
 pnpm lint
@@ -45,8 +46,7 @@ Notes:
 
 - `pnpm build` runs type check plus production build
 - `pnpm lint` runs oxlint and eslint with `--fix`
-- There is no test suite in this repository
-- Do not invent `pnpm test` or Vitest commands here
+- `pnpm test:unit` runs the Node-based contract and behavior tests
 
 ## Build and release contract
 
@@ -55,7 +55,7 @@ Notes:
 Expected output:
 
 - `dist/`
-- `komari-theme-naive-build-<sha>.zip`
+- `komari-theme-naive-extended-build-<sha>.zip`
 
 Zip contents:
 
@@ -74,12 +74,11 @@ Do not change zip naming, manifest filename, or preview filename without updatin
 
 Source of truth: `.github/workflows/build-ci.yml`
 
-CI does only:
+CI runs:
 
 1. `pnpm install`
-2. `pnpm build`
-
-CI does not run tests, because there is no test suite.
+2. `pnpm test:unit`
+3. `pnpm build`
 
 ## Where to look
 
@@ -104,7 +103,7 @@ Contributor density, useful for triage:
 - Preserve the `@` alias to `src` defined in `vite.config.ts`
 - Treat `komari-theme.json` as release input, not optional metadata
 - Treat `docs/preview.png` as release input, not just documentation art
-- Respect existing generated outputs and naming patterns, especially `komari-theme-naive-build-<sha>.zip`
+- Respect existing generated outputs and naming patterns, especially `komari-theme-naive-extended-build-<sha>.zip`
 - Root verification is lint plus build, not tests
 
 ## Repo grounded anti-patterns
