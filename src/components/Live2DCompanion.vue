@@ -8,6 +8,7 @@ import {
   LIVE2D_HIDDEN_KEY,
   pickLive2DMessage,
   readSessionFlag,
+  resolveLive2DFocusTarget,
   resolveLive2DModelPath,
   resolveLive2DProfile,
   resolveLive2DViewportMetrics,
@@ -52,6 +53,8 @@ let loadVersion = 0
 let warned = false
 let stopWatch: (() => void) | null = null
 let renderingSupported: boolean | null = null
+let pointerListening = false
+let activeTouchPointerId: number | null = null
 
 function sessionStorageOrNull(): Storage | null {
   try {
@@ -96,7 +99,76 @@ function cancelScheduledLoad() {
   }
 }
 
+function applyPointerFocus(event: PointerEvent) {
+  const target = resolveLive2DFocusTarget(
+    event.clientX,
+    event.clientY,
+    window.innerWidth,
+    window.innerHeight,
+  )
+  if (target)
+    handle?.setFocus(target.x, target.y)
+}
+
+function resetPointerFocus() {
+  activeTouchPointerId = null
+  handle?.resetFocus()
+}
+
+function onPointerDown(event: PointerEvent) {
+  if (finePointer.value || event.pointerType !== 'touch')
+    return
+  activeTouchPointerId = event.pointerId
+  applyPointerFocus(event)
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (finePointer.value) {
+    if (event.pointerType === 'mouse')
+      applyPointerFocus(event)
+    return
+  }
+  if (event.pointerType === 'touch' && event.pointerId === activeTouchPointerId)
+    applyPointerFocus(event)
+}
+
+function onPointerEnd(event: PointerEvent) {
+  if (event.pointerType === 'touch' && event.pointerId === activeTouchPointerId)
+    resetPointerFocus()
+}
+
+function onPointerOut(event: PointerEvent) {
+  if (finePointer.value && event.pointerType === 'mouse' && event.relatedTarget === null)
+    resetPointerFocus()
+}
+
+function addPointerListeners() {
+  if (pointerListening || !ready.value || reducedMotion.value)
+    return
+  pointerListening = true
+  window.addEventListener('pointermove', onPointerMove, { passive: true })
+  window.addEventListener('pointerdown', onPointerDown, { passive: true })
+  window.addEventListener('pointerup', onPointerEnd, { passive: true })
+  window.addEventListener('pointercancel', onPointerEnd, { passive: true })
+  window.addEventListener('pointerout', onPointerOut, { passive: true })
+  window.addEventListener('blur', resetPointerFocus)
+}
+
+function removePointerListeners() {
+  if (!pointerListening)
+    return
+  pointerListening = false
+  activeTouchPointerId = null
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerdown', onPointerDown)
+  window.removeEventListener('pointerup', onPointerEnd)
+  window.removeEventListener('pointercancel', onPointerEnd)
+  window.removeEventListener('pointerout', onPointerOut)
+  window.removeEventListener('blur', resetPointerFocus)
+}
+
 function destroyRuntime() {
+  removePointerListeners()
   loadVersion++
   cancelScheduledLoad()
   ownerController?.abort()
@@ -156,6 +228,7 @@ async function initializeRuntime(version: number, controller: AbortController) {
     resizeRuntime()
     handle.setVisible(!document.hidden)
     ready.value = true
+    addPointerListeners()
     await greetOnce(version, controller.signal)
   }
   catch {
@@ -216,6 +289,8 @@ function hideForSession() {
 }
 
 function onVisibilityChange() {
+  if (document.hidden)
+    resetPointerFocus()
   handle?.setVisible(!document.hidden)
 }
 
@@ -228,6 +303,7 @@ function onReducedMotionChange(event: MediaQueryListEvent) {
 }
 
 function removeEnvironmentListeners() {
+  removePointerListeners()
   stopWatch?.()
   stopWatch = null
   finePointerQuery?.removeEventListener('change', onFinePointerChange)

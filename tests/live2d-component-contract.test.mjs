@@ -49,6 +49,29 @@ test('owns visibility, media-query, resize, and teardown lifecycle', async () =>
   assert.match(component, /supportsLive2DWebGL/)
 })
 
+test('tracks desktop and pressed touch pointers with passive global listeners', async () => {
+  const component = await source('src/components/Live2DCompanion.vue')
+  assert.match(component, /resolveLive2DFocusTarget/)
+  assert.match(component, /window\.addEventListener\('pointermove', onPointerMove, \{ passive: true \}\)/)
+  assert.match(component, /window\.addEventListener\('pointerdown', onPointerDown, \{ passive: true \}\)/)
+  assert.match(component, /window\.addEventListener\('pointerup', onPointerEnd, \{ passive: true \}\)/)
+  assert.match(component, /window\.addEventListener\('pointercancel', onPointerEnd, \{ passive: true \}\)/)
+  assert.match(component, /event\.pointerType === 'mouse'/)
+  assert.match(component, /event\.pointerType !== 'touch'/)
+  assert.match(component, /activeTouchPointerId/)
+  assert.doesNotMatch(component, /preventDefault\(\)/)
+})
+
+test('resets and removes Live2D focus listeners on every terminal path', async () => {
+  const component = await source('src/components/Live2DCompanion.vue')
+  assert.match(component, /function resetPointerFocus\(\)[\s\S]*handle\?\.resetFocus\(\)/)
+  assert.match(component, /function onPointerOut\([\s\S]*relatedTarget === null[\s\S]*resetPointerFocus\(\)/)
+  assert.match(component, /window\.addEventListener\('blur', resetPointerFocus\)/)
+  assert.match(component, /function onVisibilityChange\(\)[\s\S]*document\.hidden[\s\S]*resetPointerFocus\(\)/)
+  assert.match(component, /function destroyRuntime\(\)[\s\S]*removePointerListeners\(\)[\s\S]*handle\?\.destroy\(\)/)
+  assert.match(component, /window\.removeEventListener\('pointermove', onPointerMove\)/)
+})
+
 test('keeps the responsive companion bounded and non-blocking', async () => {
   const component = await source('src/components/Live2DCompanion.vue')
   assert.match(component, /z-index:\s*15/)
