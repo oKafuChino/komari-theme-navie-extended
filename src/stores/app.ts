@@ -38,6 +38,15 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   TB: 2,
 }
 
+export function resolveBooleanThemeSetting(
+  settings: Record<string, unknown> | null | undefined,
+  key: string,
+  fallback: boolean,
+): boolean {
+  const value = settings?.[key]
+  return typeof value === 'boolean' ? value : fallback
+}
+
 const useAppStore = defineStore('app', () => {
   const loading = ref<boolean>(true)
 
@@ -107,6 +116,14 @@ const useAppStore = defineStore('app', () => {
       return settings.showLoginButton
     }
     return true
+  })
+
+  const sakuraEnabled = computed<boolean>(() => {
+    return resolveBooleanThemeSetting(publicSettings.value?.theme_settings, 'sakuraEnabled', true)
+  })
+
+  const cursorTrailEnabled = computed<boolean>(() => {
+    return resolveBooleanThemeSetting(publicSettings.value?.theme_settings, 'cursorTrailEnabled', true)
   })
 
   // 计算属性：页面布局配置
@@ -619,6 +636,8 @@ const useAppStore = defineStore('app', () => {
     defaultViewMode,
     rpcTransportMode,
     showLoginButton,
+    sakuraEnabled,
+    cursorTrailEnabled,
     fullWidth,
     maxPageWidth,
     cardProgressLayout,
