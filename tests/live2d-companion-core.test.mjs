@@ -36,6 +36,20 @@ test('clamps scale and selects both messages deterministically', () => {
   assert.equal(core.pickLive2DMessage(() => 0.99), '请问...有什么可以帮忙的吗？')
 })
 
+test('normalizes page coordinates to subtle Live2D focus targets', () => {
+  assert.deepEqual(core.resolveLive2DFocusTarget(0, 0, 1000, 500), { x: -0.35, y: 0.22 })
+  assert.deepEqual(core.resolveLive2DFocusTarget(500, 250, 1000, 500), { x: 0, y: 0 })
+  assert.deepEqual(core.resolveLive2DFocusTarget(1000, 500, 1000, 500), { x: 0.35, y: -0.22 })
+  assert.deepEqual(core.resolveLive2DFocusTarget(2000, -500, 1000, 500), { x: 0.35, y: 0.22 })
+})
+
+test('rejects unusable Live2D focus coordinates and viewports', () => {
+  assert.equal(core.resolveLive2DFocusTarget(Number.NaN, 1, 100, 100), null)
+  assert.equal(core.resolveLive2DFocusTarget(1, Number.POSITIVE_INFINITY, 100, 100), null)
+  assert.equal(core.resolveLive2DFocusTarget(1, 1, 0, 100), null)
+  assert.equal(core.resolveLive2DFocusTarget(1, 1, 100, -1), null)
+})
+
 test('scales desktop and mobile Live2D viewports proportionally', () => {
   assert.deepEqual(core.resolveLive2DViewportMetrics(50), {
     desktop: { minWidthPx: 110, fluidWidthVw: 11, maxWidthPx: 160, maxHeightVh: 21, heightCapPx: 220 },

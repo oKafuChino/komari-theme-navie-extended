@@ -4,6 +4,8 @@ export const LIVE2D_MESSAGES = [
   '喵喵喵？不要随便摸我啦~',
   '请问...有什么可以帮忙的吗？',
 ] as const
+export const LIVE2D_FOCUS_X_AMPLITUDE = 0.35
+export const LIVE2D_FOCUS_Y_AMPLITUDE = 0.22
 
 export type Live2DProfileName = 'desktop' | 'touch'
 
@@ -11,6 +13,11 @@ export interface Live2DRuntimeProfile {
   readonly name: Live2DProfileName
   readonly activeFps: 60 | 24
   readonly idleFps: 15 | 12
+}
+
+export interface Live2DFocusTarget {
+  readonly x: number
+  readonly y: number
 }
 
 export interface Live2DProfileInput {
@@ -36,6 +43,35 @@ const TOUCH_PROFILE: Live2DRuntimeProfile = Object.freeze({
 })
 
 const memorySessionFlags = new Set<string>()
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+export function resolveLive2DFocusTarget(
+  clientX: number,
+  clientY: number,
+  viewportWidth: number,
+  viewportHeight: number,
+): Live2DFocusTarget | null {
+  if (
+    !Number.isFinite(clientX)
+    || !Number.isFinite(clientY)
+    || !Number.isFinite(viewportWidth)
+    || !Number.isFinite(viewportHeight)
+    || viewportWidth <= 0
+    || viewportHeight <= 0
+  ) {
+    return null
+  }
+
+  const normalizedX = clamp(clientX / viewportWidth * 2 - 1, -1, 1)
+  const normalizedY = clamp(1 - clientY / viewportHeight * 2, -1, 1)
+  return {
+    x: normalizedX * LIVE2D_FOCUS_X_AMPLITUDE,
+    y: normalizedY * LIVE2D_FOCUS_Y_AMPLITUDE,
+  }
+}
 
 export function resolveLive2DProfile(input: Live2DProfileInput): Live2DRuntimeProfile | null {
   if (input.reducedMotion)
