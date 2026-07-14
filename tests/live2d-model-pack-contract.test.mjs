@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
+import { promisify } from 'node:util'
 import test from 'node:test'
 
 const root = new URL('../', import.meta.url)
+const execFileAsync = promisify(execFile)
 
 async function text(path) {
   return readFile(new URL(path, root), 'utf8')
@@ -43,6 +46,20 @@ test('ships only model-free template inputs and a nonempty preview', async () =>
   const files = await walk(packRoot)
   assert.equal(files.some(file => /\.(?:moc3|model3\.json|motion3\.json|exp3\.json|wav|mp3|ogg)$/i.test(file)), false)
   assert.equal(files.some(file => /XFZN/i.test(file)), false)
+})
+
+test('tracks every model-pack source file for clean release builds', async () => {
+  const { stdout } = await execFileAsync('git', [
+    'ls-files',
+    '--',
+    'packaging/live2d-model-pack',
+  ], { cwd: new URL('../', import.meta.url) })
+  assert.deepEqual(stdout.trim().split('\n').filter(Boolean).sort(), [
+    'packaging/live2d-model-pack/dist/index.html',
+    'packaging/live2d-model-pack/dist/model/README.txt',
+    'packaging/live2d-model-pack/komari-theme.json',
+    'packaging/live2d-model-pack/preview.png',
+  ])
 })
 
 test('warns administrators not to activate or delete the resource theme', async () => {

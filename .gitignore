@@ -15,6 +15,13 @@ dist-ssr
 coverage
 *.local
 
+!packaging/
+!packaging/live2d-model-pack/
+!packaging/live2d-model-pack/dist/
+!packaging/live2d-model-pack/dist/index.html
+!packaging/live2d-model-pack/dist/model/
+!packaging/live2d-model-pack/dist/model/README.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
