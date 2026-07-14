@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import AmbientEffects from './components/AmbientEffects.vue'
 import Background from './components/Background.vue'
 import Footer from './components/Footer.vue'
 import Header from './components/Header.vue'
@@ -48,6 +49,7 @@ onUnmounted(() => {
 <template>
   <Provider>
     <Background />
+    <AmbientEffects v-if="!appStore.loading" />
     <Transition
       enter-active-class="transition-all duration-100 ease-out"
       enter-from-class="opacity-0 backdrop-blur-0"
@@ -59,28 +61,35 @@ onUnmounted(() => {
       <LoadingCover v-if="appStore.loading" />
     </Transition>
 
-    <Header />
-    <main v-if="!appStore.loading" class="min-h-screen overflow-hidden">
-      <div :style="pageContainerStyle">
-        <RouterView v-slot="{ Component }">
-          <Transition
-            enter-active-class="transition-all duration-200 ease-out"
-            enter-from-class="opacity-0 translate-x-4 blur-sm"
-            enter-to-class="opacity-100 translate-x-0 blur-0"
-            leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="opacity-100 translate-x-0 blur-0"
-            leave-to-class="opacity-0 -translate-x-4 blur-sm"
-            mode="out-in"
-          >
-            <KeepAlive :include="['HomeView']">
-              <component :is="Component" />
-            </KeepAlive>
-          </Transition>
-        </RouterView>
-      </div>
-    </main>
-    <Footer v-if="!appStore.loading" />
+    <div class="app-content-layer">
+      <Header />
+      <main v-if="!appStore.loading" class="min-h-screen overflow-hidden">
+        <div :style="pageContainerStyle">
+          <RouterView v-slot="{ Component }">
+            <Transition
+              enter-active-class="transition-all duration-200 ease-out"
+              enter-from-class="opacity-0 translate-x-4 blur-sm"
+              enter-to-class="opacity-100 translate-x-0 blur-0"
+              leave-active-class="transition-all duration-200 ease-in"
+              leave-from-class="opacity-100 translate-x-0 blur-0"
+              leave-to-class="opacity-0 -translate-x-4 blur-sm"
+              mode="out-in"
+            >
+              <KeepAlive :include="['HomeView']">
+                <component :is="Component" />
+              </KeepAlive>
+            </Transition>
+          </RouterView>
+        </div>
+      </main>
+      <Footer v-if="!appStore.loading" />
+    </div>
   </Provider>
 </template>
 
-<style scoped></style>
+<style scoped>
+.app-content-layer {
+  position: relative;
+  z-index: 1;
+}
+</style>

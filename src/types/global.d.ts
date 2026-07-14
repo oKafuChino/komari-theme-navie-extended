@@ -1,4 +1,5 @@
 import type { DialogApi, LoadingBarApi, MessageApi, ModalApi, NotificationApi } from 'naive-ui'
+import type { AmbientEffectsDiagnostics } from '@/utils/ambientEffects'
 
 // 构建时注入的全局常量
 declare const __BUILD_VERSION__: string
@@ -11,5 +12,6 @@ declare global {
     $notification: NotificationApi
     $loadingBar: LoadingBarApi
     $modal: ModalApi
+    __ambientEffectsDiagnostics?: () => AmbientEffectsDiagnostics | null
   }
 }
