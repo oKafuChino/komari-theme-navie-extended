@@ -17,7 +17,7 @@ interface Live2DRenderer {
   start: () => void
   stop: () => void
   renderStatic: () => void
-  resize: (width: number, height: number, dpr: number, scale: number) => void
+  resize: (width: number, height: number, dpr: number) => void
   destroy: () => void
   getFrameCount: () => number
 }
@@ -26,7 +26,6 @@ interface RendererFactoryOptions {
   canvas: HTMLCanvasElement
   modelUrl: URL
   signal?: AbortSignal
-  scale: number
   onFatal: (error: unknown) => void
 }
 
@@ -42,7 +41,6 @@ export interface Live2DRuntimeOptions {
   canvas: HTMLCanvasElement
   modelUrl: URL
   profile: Live2DRuntimeProfile | null
-  scale: number
   signal?: AbortSignal
   dependencies?: Live2DRuntimeDependencies
 }
@@ -50,7 +48,7 @@ export interface Live2DRuntimeOptions {
 export interface Live2DHandle {
   setActivity: (active: boolean) => void
   setVisible: (visible: boolean) => void
-  resize: (width: number, height: number, dpr: number, scale: number) => void
+  resize: (width: number, height: number, dpr: number) => void
   getDiagnostics: () => Live2DDiagnostics
   destroy: () => void
 }
@@ -178,13 +176,12 @@ async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live
   let frameCount = 0
   let destroyed = false
   let fatalReported = false
-  let currentScale = options.scale
 
   function fitModel(width: number, height: number) {
     const bounds = model.getLocalBounds()
     if (bounds.width <= 0 || bounds.height <= 0)
       return
-    const fit = Math.min(width / bounds.width, height / bounds.height) * (currentScale / 100)
+    const fit = Math.min(width / bounds.width, height / bounds.height)
     model.scale.set(fit)
     model.x = width / 2 - (bounds.x + bounds.width / 2) * fit
     model.y = height - (bounds.y + bounds.height) * fit
@@ -249,11 +246,10 @@ async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live
         reportFatal(error)
       }
     },
-    resize(width, height, dpr, scale) {
+    resize(width, height, dpr) {
       if (destroyed)
         return
       try {
-        currentScale = scale
         app.renderer.resolution = Math.min(dpr, MAX_LIVE2D_DPR)
         app.renderer.resize(Math.max(1, width), Math.max(1, height))
         fitModel(width, height)
@@ -296,7 +292,6 @@ export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promis
       canvas: options.canvas,
       modelUrl: options.modelUrl,
       signal: options.signal,
-      scale: options.scale,
       onFatal: error => handleFatal(error),
     })
   }
@@ -409,9 +404,9 @@ export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promis
       else
         renderer.renderStatic()
     },
-    resize(width, height, dpr, scale) {
+    resize(width, height, dpr) {
       if (!destroyed) {
-        renderer.resize(width, height, Math.min(dpr || 1, MAX_LIVE2D_DPR), scale)
+        renderer.resize(width, height, Math.min(dpr || 1, MAX_LIVE2D_DPR))
         if (!options.profile && visible)
           renderer.renderStatic()
       }

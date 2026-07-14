@@ -38,7 +38,7 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   TB: 2,
 }
 
-const DEFAULT_LIVE2D_MODEL_PATH = '/live2d/model/model.model3.json'
+const DEFAULT_LIVE2D_MODEL_PATH = '/live2d-model/model.model3.json'
 
 export function resolveBooleanThemeSetting(
   settings: Record<string, unknown> | null | undefined,
@@ -137,8 +137,12 @@ const useAppStore = defineStore('app', () => {
     if (typeof value !== 'string')
       return DEFAULT_LIVE2D_MODEL_PATH
     const path = value.trim()
-    if (!path.startsWith('/live2d/') || !path.toLowerCase().endsWith('.model3.json'))
+    if (
+      (!path.startsWith('/live2d-model/') && !path.startsWith('/live2d/'))
+      || !path.toLowerCase().endsWith('.model3.json')
+    ) {
       return DEFAULT_LIVE2D_MODEL_PATH
+    }
     return path
   })
 

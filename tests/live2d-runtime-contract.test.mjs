@@ -81,7 +81,6 @@ test('starts active, becomes idle after five seconds, and resumes active on inte
     canvas: {},
     modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
     profile: harness.profile,
-    scale: 100,
     dependencies: harness.dependencies,
   })
 
@@ -99,7 +98,6 @@ test('pauses while hidden, caps resize DPR, and destroys once', async () => {
     canvas: {},
     modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
     profile: harness.profile,
-    scale: 100,
     dependencies: harness.dependencies,
   })
 
@@ -107,8 +105,8 @@ test('pauses while hidden, caps resize DPR, and destroys once', async () => {
   assert.deepEqual(harness.calls.at(-1), ['stop'])
   handle.setVisible(true)
   assert.deepEqual(harness.calls.slice(-2), [['fps', 60], ['start']])
-  handle.resize(300, 420, 3, 125)
-  assert.deepEqual(harness.calls.at(-1), ['resize', 300, 420, 1.5, 125])
+  handle.resize(300, 420, 3)
+  assert.deepEqual(harness.calls.at(-1), ['resize', 300, 420, 1.5])
   harness.setFrameCount(12)
   assert.deepEqual(handle.getDiagnostics(), { running: true, targetFps: 60, frameCount: 12, destroyed: false })
   handle.destroy()
@@ -123,7 +121,6 @@ test('renders one static frame for reduced motion without starting a timer', asy
     canvas: {},
     modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
     profile: null,
-    scale: 100,
     dependencies: harness.dependencies,
   })
 
@@ -131,9 +128,9 @@ test('renders one static frame for reduced motion without starting a timer', asy
   assert.equal(harness.calls.some(call => call[0] === 'static'), true)
   assert.equal(harness.timers.size, 0)
   assert.deepEqual(handle.getDiagnostics(), { running: false, targetFps: 0, frameCount: 0, destroyed: false })
-  handle.resize(180, 260, 2, 100)
+  handle.resize(180, 260, 2)
   assert.deepEqual(harness.calls.slice(-2), [
-    ['resize', 180, 260, 1.5, 100],
+    ['resize', 180, 260, 1.5],
     ['static'],
   ])
 })
@@ -144,7 +141,6 @@ test('warns once and rejects when initialization fails', async () => {
     canvas: {},
     modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
     profile: { name: 'touch', activeFps: 24, idleFps: 12 },
-    scale: 100,
     dependencies: {
       loadCore: async () => { throw new Error('core failed') },
       createRenderer: async () => { throw new Error('must not run') },
@@ -160,7 +156,6 @@ test('destroys the runtime after a fatal renderer update', async () => {
     canvas: {},
     modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
     profile: harness.profile,
-    scale: 100,
     dependencies: harness.dependencies,
   })
 
@@ -184,7 +179,6 @@ test('passes the owner signal to Core loading', async () => {
     canvas: {},
     modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
     profile: harness.profile,
-    scale: 100,
     signal: controller.signal,
     dependencies: harness.dependencies,
   })
@@ -211,7 +205,6 @@ test('destroys a renderer when its initial frame fails', async () => {
       canvas: {},
       modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
       profile,
-      scale: 100,
       dependencies: harness.dependencies,
     }), /failed/)
     assert.equal(harness.calls.filter(call => call[0] === 'destroy').length, 1)
@@ -229,4 +222,6 @@ test('guards Pixi initialization and frame updates with cleanup paths', async ()
   assert.match(source, /WEBGL_lose_context/)
   assert.match(source, /signal\?\.addEventListener\('abort'/)
   assert.match(source, /script\.remove\(\)/)
+  assert.doesNotMatch(source, /currentScale/)
+  assert.doesNotMatch(source, /\*\s*\(\s*scale\s*\/\s*100\s*\)/)
 })

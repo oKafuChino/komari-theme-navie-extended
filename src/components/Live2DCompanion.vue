@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
 import type { Live2DHandle } from '@/utils/live2dRuntime'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
@@ -9,6 +10,7 @@ import {
   readSessionFlag,
   resolveLive2DModelPath,
   resolveLive2DProfile,
+  resolveLive2DViewportMetrics,
   supportsLive2DWebGL,
   writeSessionFlag,
 } from '@/utils/live2dCompanion'
@@ -24,6 +26,20 @@ const hidden = ref(false)
 const ready = ref(false)
 const message = ref('')
 const shouldMount = computed(() => appStore.live2dEnabled && !hidden.value)
+const viewportStyle = computed<CSSProperties>(() => {
+  const { desktop, mobile } = resolveLive2DViewportMetrics(appStore.live2dScale)
+  return {
+    '--live2d-desktop-min-width': `${desktop.minWidthPx}px`,
+    '--live2d-desktop-fluid-width': `${desktop.fluidWidthVw}vw`,
+    '--live2d-desktop-max-width': `${desktop.maxWidthPx}px`,
+    '--live2d-desktop-max-height': `${desktop.maxHeightVh}vh`,
+    '--live2d-desktop-height-cap': `${desktop.heightCapPx}px`,
+    '--live2d-mobile-fluid-width': `${mobile.fluidWidthVw}vw`,
+    '--live2d-mobile-max-width': `${mobile.maxWidthPx}px`,
+    '--live2d-mobile-max-height': `${mobile.maxHeightVh}vh`,
+    '--live2d-mobile-height-cap': `${mobile.heightCapPx}px`,
+  }
+})
 
 let handle: Live2DHandle | null = null
 let finePointerQuery: MediaQueryList | null = null
@@ -94,7 +110,7 @@ function resizeRuntime() {
   if (!handle || !modelTarget.value)
     return
   const bounds = modelTarget.value.getBoundingClientRect()
-  handle.resize(bounds.width, bounds.height, window.devicePixelRatio || 1, appStore.live2dScale)
+  handle.resize(bounds.width, bounds.height, window.devicePixelRatio || 1)
 }
 
 async function greetOnce(version: number, signal: AbortSignal) {
@@ -129,7 +145,6 @@ async function initializeRuntime(version: number, controller: AbortController) {
       canvas: targetCanvas,
       modelUrl,
       profile,
-      scale: appStore.live2dScale,
       signal: controller.signal,
       dependencies: { warn: warnOnce },
     })
@@ -257,7 +272,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="shouldMount" class="live2d-companion" :class="{ 'is-ready': ready }">
+  <div v-if="shouldMount" class="live2d-companion" :class="{ 'is-ready': ready }" :style="viewportStyle">
     <div
       ref="modelTarget"
       class="live2d-companion__model"
@@ -305,9 +320,9 @@ onUnmounted(() => {
 }
 
 .live2d-companion__model {
-  width: clamp(220px, 22vw, 320px);
-  height: min(42vh, 440px);
-  max-height: 42vh;
+  width: clamp(var(--live2d-desktop-min-width), var(--live2d-desktop-fluid-width), var(--live2d-desktop-max-width));
+  height: min(var(--live2d-desktop-max-height), var(--live2d-desktop-height-cap));
+  max-height: var(--live2d-desktop-max-height);
   pointer-events: auto;
   cursor: pointer;
   outline: none;
@@ -401,9 +416,9 @@ onUnmounted(() => {
 
 @media (max-width: 600px) {
   .live2d-companion__model {
-    width: min(42vw, 190px);
-    height: min(32vh, 300px);
-    max-height: 32vh;
+    width: min(var(--live2d-mobile-fluid-width), var(--live2d-mobile-max-width));
+    height: min(var(--live2d-mobile-max-height), var(--live2d-mobile-height-cap));
+    max-height: var(--live2d-mobile-max-height);
   }
 
   .live2d-companion__bubble {

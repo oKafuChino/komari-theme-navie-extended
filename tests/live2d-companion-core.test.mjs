@@ -36,6 +36,21 @@ test('clamps scale and selects both messages deterministically', () => {
   assert.equal(core.pickLive2DMessage(() => 0.99), '请问...有什么可以帮忙的吗？')
 })
 
+test('scales desktop and mobile Live2D viewports proportionally', () => {
+  assert.deepEqual(core.resolveLive2DViewportMetrics(50), {
+    desktop: { minWidthPx: 110, fluidWidthVw: 11, maxWidthPx: 160, maxHeightVh: 21, heightCapPx: 220 },
+    mobile: { fluidWidthVw: 21, maxWidthPx: 95, maxHeightVh: 16, heightCapPx: 150 },
+  })
+  assert.deepEqual(core.resolveLive2DViewportMetrics(100), {
+    desktop: { minWidthPx: 220, fluidWidthVw: 22, maxWidthPx: 320, maxHeightVh: 42, heightCapPx: 440 },
+    mobile: { fluidWidthVw: 42, maxWidthPx: 190, maxHeightVh: 32, heightCapPx: 300 },
+  })
+  assert.deepEqual(core.resolveLive2DViewportMetrics(150), {
+    desktop: { minWidthPx: 330, fluidWidthVw: 33, maxWidthPx: 480, maxHeightVh: 63, heightCapPx: 660 },
+    mobile: { fluidWidthVw: 63, maxWidthPx: 285, maxHeightVh: 48, heightCapPx: 450 },
+  })
+})
+
 test('probes WebGL without retaining the temporary context', () => {
   let lost = 0
   const context = {
@@ -53,7 +68,11 @@ test('probes WebGL without retaining the temporary context', () => {
   })), false)
 })
 
-test('accepts same-origin model paths and rejects remote or traversing paths', () => {
+test('accepts persistent and legacy same-origin model paths and rejects remote or traversing paths', () => {
+  assert.equal(
+    core.resolveLive2DModelPath('/live2d-model/XFZN.model3.json', 'https://site.test')?.href,
+    'https://site.test/live2d-model/XFZN.model3.json',
+  )
   assert.equal(
     core.resolveLive2DModelPath('/live2d/model/XFZN.model3.json', 'https://site.test')?.href,
     'https://site.test/live2d/model/XFZN.model3.json',
@@ -62,6 +81,8 @@ test('accepts same-origin model paths and rejects remote or traversing paths', (
   assert.equal(core.resolveLive2DModelPath('/live2d/model/../runtime/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/live2d/model/%2e%2e/runtime/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/assets/model.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('https://site.test/live2d-model/model.model3.json', 'https://site.test')?.href, 'https://site.test/live2d-model/model.model3.json')
+  assert.equal(core.resolveLive2DModelPath('http://site.test/live2d-model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/live2d/model/model.model3.json?remote=1', 'https://site.test'), null)
 })
 

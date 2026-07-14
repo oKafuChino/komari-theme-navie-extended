@@ -49,6 +49,41 @@ export function clampLive2DScale(value: unknown): number {
   return Math.min(150, Math.max(50, value))
 }
 
+export interface Live2DViewportMetrics {
+  desktop: {
+    minWidthPx: number
+    fluidWidthVw: number
+    maxWidthPx: number
+    maxHeightVh: number
+    heightCapPx: number
+  }
+  mobile: {
+    fluidWidthVw: number
+    maxWidthPx: number
+    maxHeightVh: number
+    heightCapPx: number
+  }
+}
+
+export function resolveLive2DViewportMetrics(scale: unknown): Live2DViewportMetrics {
+  const factor = clampLive2DScale(scale) / 100
+  return {
+    desktop: {
+      minWidthPx: 220 * factor,
+      fluidWidthVw: 22 * factor,
+      maxWidthPx: 320 * factor,
+      maxHeightVh: 42 * factor,
+      heightCapPx: 440 * factor,
+    },
+    mobile: {
+      fluidWidthVw: 42 * factor,
+      maxWidthPx: 190 * factor,
+      maxHeightVh: 32 * factor,
+      heightCapPx: 300 * factor,
+    },
+  }
+}
+
 export function supportsLive2DWebGL(
   createCanvas: () => Pick<HTMLCanvasElement, 'getContext'> = () => document.createElement('canvas'),
 ): boolean {
@@ -88,13 +123,15 @@ export function resolveLive2DModelPath(path: string, origin: string): URL | null
   try {
     const base = new URL(origin)
     const resolved = new URL(path, base)
+    const isAllowedModelRoot = resolved.pathname.startsWith('/live2d-model/')
+      || resolved.pathname.startsWith('/live2d/')
     if (
       resolved.origin !== base.origin
       || resolved.username
       || resolved.password
       || resolved.search
       || resolved.hash
-      || !resolved.pathname.startsWith('/live2d/')
+      || !isAllowedModelRoot
       || !resolved.pathname.toLowerCase().endsWith('.model3.json')
     ) {
       return null
