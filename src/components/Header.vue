@@ -4,6 +4,7 @@ import { computed, h, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import LoginDialog from './LoginDialog.vue'
+import ResidualValueCalculator from './ResidualValueCalculator.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -86,6 +87,7 @@ function handleButtonClick(action: string) {
         </NH3>
       </NFlex>
       <NFlex class="flex gap-4">
+        <ResidualValueCalculator v-if="appStore.residualValueEnabled" />
         <NPopover v-for="button in actionButtons" :key="button.action" :disabled="button.disabled">
           <template #trigger>
             <NButton :disabled="button.disabled" class="p-2 h-8 w-8" text @click="handleButtonClick(button.action)">
