@@ -17,16 +17,14 @@
 
 主题可在公共探针页面左下角显示管理员提供的 Cubism 3/4 Live2D 模型。该功能默认关闭，不修改 Komari 后端，也不会新增数据库、服务进程或服务端定时任务。
 
-模型与主题包相互独立，更新主题时不需要重新打包或上传模型。安装模型：
+安装模型：
 
-1. 在反向代理或同源静态服务器中创建持久路径 `/live2d-model/`，该目录不能位于 Komari 主题目录内
-2. 将完整的 Cubism 3/4 模型复制到这个目录，保持 `.model3.json` 内声明的相对目录结构不变
-3. 确认浏览器可直接访问入口，例如 `https://monitor.example.com/live2d-model/model.model3.json`
-4. 在主题设置中启用 `Live2D 看板娘`，填写同源入口路径 `/live2d-model/model.model3.json`
+1. 解压 Release ZIP
+2. 将完整模型复制到 `dist/live2d/model/`，保持模型内部相对目录不变
+3. 重新压缩根目录中的 `dist/`、`komari-theme.json` 和 `preview.png`
+4. 上传主题，在主题设置中启用 `Live2D 看板娘`，填写入口路径，例如 `/live2d/model/model.model3.json`
 
-Komari 不会自动创建或托管这个外置目录；请通过现有反向代理或静态服务器映射它，这不需要修改 Komari 后端。旧的 `/live2d/model/...` 入口仍可加载，方便已有部署迁移，但位于主题包内的模型仍可能在主题更新时丢失。
-
-Release 不包含任何角色模型。请仅部署你有权公开展示的模型。建议将 4096 像素纹理降至 2048 像素：单张解码内存可由约 64 MiB 降至约 16 MiB，在看板娘显示尺寸下通常没有明显损失。
+Release 默认不包含任何角色模型。请仅部署你有权公开展示的模型；纹理内存与目录要求见压缩包中的 `dist/live2d/model/README.txt`。
 
 首次问候会由访客浏览器直接请求 `https://api64.ipify.org?format=json` 获取公网 IP。ipify 会接触该 IP；主题和 Komari 不会保存 IP，只在当前浏览器会话中保存“已问候”和“已关闭”标记。模型或 IP 服务失败不会影响探针页面。
 

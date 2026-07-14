@@ -68,11 +68,7 @@ test('probes WebGL without retaining the temporary context', () => {
   })), false)
 })
 
-test('accepts persistent and legacy same-origin model paths and rejects remote or traversing paths', () => {
-  assert.equal(
-    core.resolveLive2DModelPath('/live2d-model/XFZN.model3.json', 'https://site.test')?.href,
-    'https://site.test/live2d-model/XFZN.model3.json',
-  )
+test('accepts same-origin model paths and rejects remote or traversing paths', () => {
   assert.equal(
     core.resolveLive2DModelPath('/live2d/model/XFZN.model3.json', 'https://site.test')?.href,
     'https://site.test/live2d/model/XFZN.model3.json',
@@ -81,8 +77,6 @@ test('accepts persistent and legacy same-origin model paths and rejects remote o
   assert.equal(core.resolveLive2DModelPath('/live2d/model/../runtime/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/live2d/model/%2e%2e/runtime/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/assets/model.model3.json', 'https://site.test'), null)
-  assert.equal(core.resolveLive2DModelPath('https://site.test/live2d-model/model.model3.json', 'https://site.test')?.href, 'https://site.test/live2d-model/model.model3.json')
-  assert.equal(core.resolveLive2DModelPath('http://site.test/live2d-model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/live2d/model/model.model3.json?remote=1', 'https://site.test'), null)
 })
 

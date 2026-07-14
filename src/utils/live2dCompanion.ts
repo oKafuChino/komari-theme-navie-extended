@@ -123,15 +123,13 @@ export function resolveLive2DModelPath(path: string, origin: string): URL | null
   try {
     const base = new URL(origin)
     const resolved = new URL(path, base)
-    const isAllowedModelRoot = resolved.pathname.startsWith('/live2d-model/')
-      || resolved.pathname.startsWith('/live2d/')
     if (
       resolved.origin !== base.origin
       || resolved.username
       || resolved.password
       || resolved.search
       || resolved.hash
-      || !isAllowedModelRoot
+      || !resolved.pathname.startsWith('/live2d/')
       || !resolved.pathname.toLowerCase().endsWith('.model3.json')
     ) {
       return null

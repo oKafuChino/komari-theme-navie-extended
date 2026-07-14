@@ -29,8 +29,8 @@ test('declares the three Live2D settings', async () => {
     key: 'live2dModelPath',
     name: 'Live2D 模型入口',
     type: 'string',
-    default: '/live2d-model/model.model3.json',
-    help: '主题外同源 /live2d-model/ 目录下的 Cubism 3/4 .model3.json 路径；旧 /live2d/ 路径仍兼容',
+    default: '/live2d/model/model.model3.json',
+    help: '同源 /live2d/ 目录下的 Cubism 3/4 .model3.json 路径',
   })
   assert.deepEqual(items.find(item => item.key === 'live2dScale'), {
     key: 'live2dScale',
@@ -61,7 +61,7 @@ test('normalizes invalid Live2D settings to safe defaults', async () => {
   } }
 
   assert.equal(store.live2dEnabled, false)
-  assert.equal(store.live2dModelPath, '/live2d-model/model.model3.json')
+  assert.equal(store.live2dModelPath, '/live2d/model/model.model3.json')
   assert.equal(store.live2dScale, 150)
 })
 
