@@ -4,6 +4,7 @@ import { validateLive2DModelDocument } from '@/utils/live2dCompanion'
 const CUBISM_CORE_URL = '/live2d/runtime/live2dcubismcore.min.js'
 const MAX_LIVE2D_DPR = 1.5
 const IDLE_DELAY_MS = 5000
+const FOCUS_ACTIVITY_REFRESH_MS = 1000
 
 export interface Live2DDiagnostics {
   running: boolean
@@ -18,6 +19,8 @@ interface Live2DRenderer {
   stop: () => void
   renderStatic: () => void
   resize: (width: number, height: number, dpr: number) => void
+  setFocus: (x: number, y: number) => void
+  resetFocus: () => void
   destroy: () => void
   getFrameCount: () => number
 }
@@ -27,6 +30,7 @@ interface RendererFactoryOptions {
   modelUrl: URL
   signal?: AbortSignal
   onFatal: (error: unknown) => void
+  onFocusError: (error: unknown) => void
 }
 
 export interface Live2DRuntimeDependencies {
@@ -35,6 +39,7 @@ export interface Live2DRuntimeDependencies {
   setTimer?: (callback: () => void, delay: number) => ReturnType<typeof setTimeout>
   clearTimer?: (handle: ReturnType<typeof setTimeout>) => void
   warn?: (message: string, error?: unknown) => void
+  now?: () => number
 }
 
 export interface Live2DRuntimeOptions {
@@ -49,6 +54,8 @@ export interface Live2DHandle {
   setActivity: (active: boolean) => void
   setVisible: (visible: boolean) => void
   resize: (width: number, height: number, dpr: number) => void
+  setFocus: (x: number, y: number) => void
+  resetFocus: () => void
   getDiagnostics: () => Live2DDiagnostics
   destroy: () => void
 }
@@ -204,6 +211,8 @@ async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live
   let frameCount = 0
   let destroyed = false
   let fatalReported = false
+  let pendingFocus: { x: number, y: number } | null = null
+  let focusEnabled = true
 
   function fitModel(width: number, height: number) {
     const bounds = model.getLocalBounds()
@@ -215,8 +224,23 @@ async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live
     model.y = height - (bounds.y + bounds.height) * fit
   }
 
+  function applyPendingFocus() {
+    if (!focusEnabled || !pendingFocus)
+      return
+    const target = pendingFocus
+    pendingFocus = null
+    try {
+      model.internalModel.focusController.focus(target.x, target.y)
+    }
+    catch (error) {
+      focusEnabled = false
+      options.onFocusError(error)
+    }
+  }
+
   const renderFrame = () => {
     try {
+      applyPendingFocus()
       model.update(app.ticker.deltaMS)
       frameCount++
     }
@@ -286,10 +310,29 @@ async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live
         reportFatal(error)
       }
     },
+    setFocus(x, y) {
+      if (
+        destroyed
+        || !focusEnabled
+        || !Number.isFinite(x)
+        || !Number.isFinite(y)
+      ) {
+        return
+      }
+      pendingFocus = {
+        x: Math.min(1, Math.max(-1, x)),
+        y: Math.min(1, Math.max(-1, y)),
+      }
+    },
+    resetFocus() {
+      if (!destroyed && focusEnabled)
+        pendingFocus = { x: 0, y: 0 }
+    },
     destroy() {
       if (destroyed)
         return
       destroyed = true
+      pendingFocus = null
       app.stop()
       app.ticker.remove(renderFrame)
       app.stage.removeChild(model)
@@ -311,9 +354,26 @@ export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promis
   const setTimer = dependencies.setTimer ?? ((callback, delay) => setTimeout(callback, delay))
   const clearTimer = dependencies.clearTimer ?? (handle => clearTimeout(handle))
   const warn = dependencies.warn ?? ((message, error) => console.warn(message, error))
+  const now = dependencies.now ?? (() => performance.now())
 
   let renderer: Live2DRenderer
+  let destroyed = false
+  let visible = true
+  let running = false
+  let targetFps = 0
+  let finalFrameCount = 0
+  let idleTimer: ReturnType<typeof setTimeout> | null = null
+  let focusAvailable = options.profile !== null
+  let focusWarned = false
+  let lastFocusActivityAt = now()
   let handleFatal: (error: unknown) => void = () => {}
+  const handleFocusError = (error: unknown) => {
+    if (destroyed || focusWarned)
+      return
+    focusAvailable = false
+    focusWarned = true
+    warn('[Live2D] focus controller failed; pointer following disabled', error)
+  }
   try {
     await loadCore(options.signal)
     renderer = await createRenderer({
@@ -321,19 +381,13 @@ export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promis
       modelUrl: options.modelUrl,
       signal: options.signal,
       onFatal: error => handleFatal(error),
+      onFocusError: error => handleFocusError(error),
     })
   }
   catch (error) {
     warn('[Live2D] initialization failed', error)
     throw error
   }
-
-  let destroyed = false
-  let visible = true
-  let running = false
-  let targetFps = 0
-  let finalFrameCount = 0
-  let idleTimer: ReturnType<typeof setTimeout> | null = null
 
   function clearIdleTimer() {
     if (idleTimer === null)
@@ -370,6 +424,23 @@ export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promis
     catch (error) {
       handleFatal(error)
     }
+  }
+
+  function refreshFocusActivity() {
+    if (!options.profile)
+      return
+    const currentTime = now()
+    if (
+      targetFps === options.profile.activeFps
+      && currentTime - lastFocusActivityAt < FOCUS_ACTIVITY_REFRESH_MS
+    ) {
+      return
+    }
+    lastFocusActivityAt = currentTime
+    setRate(options.profile.activeFps)
+    renderer.start()
+    running = true
+    scheduleIdle()
   }
 
   function destroyRuntime() {
@@ -438,6 +509,19 @@ export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promis
         if (!options.profile && visible)
           renderer.renderStatic()
       }
+    },
+    setFocus(x, y) {
+      if (destroyed || !visible || !focusAvailable || !options.profile)
+        return
+      renderer.setFocus(x, y)
+      refreshFocusActivity()
+    },
+    resetFocus() {
+      if (destroyed || !focusAvailable || !options.profile)
+        return
+      renderer.resetFocus()
+      if (visible)
+        refreshFocusActivity()
     },
     getDiagnostics() {
       return {

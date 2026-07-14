@@ -21,12 +21,16 @@ function createHarness(profile = { name: 'desktop', activeFps: 60, idleFps: 15 }
   let timerId = 0
   let frameCount = 0
   let fatal
+  let focusFailure
+  let now = 0
   const renderer = {
     setTargetFps: fps => calls.push(['fps', fps]),
     start: () => calls.push(['start']),
     stop: () => calls.push(['stop']),
     renderStatic: () => calls.push(['static']),
     resize: (...args) => calls.push(['resize', ...args]),
+    setFocus: (x, y) => calls.push(['focus', x, y]),
+    resetFocus: () => calls.push(['focus', 0, 0]),
     destroy: () => calls.push(['destroy']),
     getFrameCount: () => frameCount,
   }
@@ -35,6 +39,7 @@ function createHarness(profile = { name: 'desktop', activeFps: 60, idleFps: 15 }
     createRenderer: async (options) => {
       calls.push(['renderer'])
       fatal = options.onFatal
+      focusFailure = options.onFocusError
       return renderer
     },
     setTimer: (callback, delay) => {
@@ -46,6 +51,7 @@ function createHarness(profile = { name: 'desktop', activeFps: 60, idleFps: 15 }
       timers.delete(id)
     },
     warn: message => calls.push(['warn', message]),
+    now: () => now,
   }
   return {
     calls,
@@ -54,7 +60,9 @@ function createHarness(profile = { name: 'desktop', activeFps: 60, idleFps: 15 }
     renderer,
     timers,
     setFrameCount: (value) => { frameCount = value },
+    setNow: (value) => { now = value },
     failRenderer: error => fatal(error),
+    failFocus: error => focusFailure(error),
     fireTimer: () => {
       const entry = [...timers.entries()][0]
       assert.ok(entry)
@@ -63,6 +71,67 @@ function createHarness(profile = { name: 'desktop', activeFps: 60, idleFps: 15 }
     },
   }
 }
+
+test('forwards focus and reset targets while preserving the runtime', async () => {
+  const harness = createHarness()
+  const handle = await runtime.createLive2DRuntime({
+    canvas: {},
+    modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
+    profile: harness.profile,
+    dependencies: harness.dependencies,
+  })
+
+  handle.setFocus(0.35, -0.22)
+  handle.resetFocus()
+  assert.deepEqual(harness.calls.filter(call => call[0] === 'focus'), [
+    ['focus', 0.35, -0.22],
+    ['focus', 0, 0],
+  ])
+  assert.equal(handle.getDiagnostics().destroyed, false)
+})
+
+test('rate-limits focus activity refresh and ignores focus after destroy', async () => {
+  const harness = createHarness()
+  const handle = await runtime.createLive2DRuntime({
+    canvas: {},
+    modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
+    profile: harness.profile,
+    dependencies: harness.dependencies,
+  })
+
+  const initialTimerId = [...harness.timers.keys()][0]
+  harness.setNow(100)
+  handle.setFocus(0.1, 0.1)
+  assert.equal([...harness.timers.keys()][0], initialTimerId)
+
+  harness.setNow(1100)
+  handle.setFocus(0.2, 0.2)
+  assert.notEqual([...harness.timers.keys()][0], initialTimerId)
+
+  handle.destroy()
+  const focusCallCount = harness.calls.filter(call => call[0] === 'focus').length
+  handle.setFocus(0.3, 0.3)
+  handle.resetFocus()
+  assert.equal(harness.calls.filter(call => call[0] === 'focus').length, focusCallCount)
+})
+
+test('disables only focus after a focus-controller failure', async () => {
+  const harness = createHarness()
+  const handle = await runtime.createLive2DRuntime({
+    canvas: {},
+    modelUrl: new URL('https://site.test/live2d/model/model.model3.json'),
+    profile: harness.profile,
+    dependencies: harness.dependencies,
+  })
+
+  harness.failFocus(new Error('focus failed'))
+  harness.failFocus(new Error('duplicate focus failure'))
+  handle.setFocus(0.1, 0.1)
+
+  assert.equal(harness.calls.filter(call => call[0] === 'warn').length, 1)
+  assert.equal(harness.calls.filter(call => call[0] === 'destroy').length, 0)
+  assert.equal(handle.getDiagnostics().destroyed, false)
+})
 
 test('keeps Pixi and Cubism 4 renderer imports lazy', async () => {
   const source = await readFile(new URL('../src/utils/live2dRuntime.ts', import.meta.url), 'utf8')
@@ -262,6 +331,10 @@ test('guards Pixi initialization and frame updates with cleanup paths', async ()
   assert.match(source, /WEBGL_lose_context/)
   assert.match(source, /signal\.addEventListener\('abort'/)
   assert.match(source, /script\.remove\(\)/)
+  assert.match(source, /let pendingFocus:/)
+  assert.match(source, /focusController\.focus\(target\.x, target\.y\)/)
+  assert.match(source, /const renderFrame = \(\) => \{[\s\S]*applyPendingFocus\(\)[\s\S]*model\.update/)
+  assert.doesNotMatch(source, /setFocus[\s\S]{0,300}model\.(?:x|y|scale)\s*=/)
   assert.doesNotMatch(source, /currentScale/)
   assert.doesNotMatch(source, /\*\s*\(\s*scale\s*\/\s*100\s*\)/)
 })
