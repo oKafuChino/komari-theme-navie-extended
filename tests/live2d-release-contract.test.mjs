@@ -8,14 +8,17 @@ async function text(path) {
   return readFile(new URL(path, root), 'utf8')
 }
 
-test('ships administrator model installation and memory guidance', async () => {
-  const guide = await text('public/live2d/model/README.txt')
-  assert.match(guide, /dist\/live2d\/model\//)
+test('keeps character models and model guidance out of the main theme', async () => {
+  const mainThemeModelFiles = await readdir(new URL('public/live2d/model/', root)).catch((error) => {
+    if (error?.code === 'ENOENT')
+      return []
+    throw error
+  })
+  assert.deepEqual(mainThemeModelFiles, [])
+  const guide = await text('packaging/live2d-model-pack/dist/model/README.txt')
   assert.match(guide, /Cubism 3\/4/)
   assert.match(guide, /\.model3\.json/)
-  assert.match(guide, /同源/)
   assert.match(guide, /保持.*相对.*目录/)
-  assert.match(guide, /4096.*64 MiB/s)
   assert.match(guide, /2048.*16 MiB/s)
 })
 
@@ -39,9 +42,4 @@ test('ships an official Cubism Core runtime with third-party notice', async () =
   assert.match(notice, /cubism\.live2d\.com\/sdk-web\/cubismcore\/live2dcubismcore\.min\.js/)
   assert.match(notice, /Live2D Proprietary Software License Agreement/)
   assert.doesNotMatch(notice, /MIT-licensed|MIT License applies to Live2D Cubism Core/)
-})
-
-test('does not ship a character model in the public model directory', async () => {
-  const files = await readdir(new URL('public/live2d/model/', root))
-  assert.deepEqual(files, ['README.txt'])
 })

@@ -1,0 +1,9 @@
+{
+  "name": "Live2D 模型资源包（请勿设为当前主题）",
+  "short": "komari-live2d-models",
+  "version": "1.0.0",
+  "configuration": {
+    "type": "managed",
+    "data": []
+  }
+}
