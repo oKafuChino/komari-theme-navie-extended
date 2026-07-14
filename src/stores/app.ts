@@ -1,8 +1,10 @@
 import type { MeInfo, PublicSettings } from '@/utils/api'
 import type { ByteDecimalsConfig, UptimeFormat } from '@/utils/helper'
+import type { CurrencyCode } from '@/utils/residualValue'
 import { usePreferredDark, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { parseFallbackRates } from '@/utils/residualValue'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
 type Lang = 'zh-CN' | 'en-US'
@@ -148,6 +150,19 @@ const useAppStore = defineStore('app', () => {
       return 100
     return Math.min(150, Math.max(50, value))
   })
+
+  const residualValueEnabled = computed<boolean>(() => {
+    return resolveBooleanThemeSetting(publicSettings.value?.theme_settings, 'residualValueEnabled', false)
+  })
+
+  const residualValueCurrency = computed<CurrencyCode>(() => {
+    const value = publicSettings.value?.theme_settings?.residualValueCurrency
+    return value === 'CNY' || value === 'USD' || value === 'EUR' || value === 'GBP' ? value : 'CNY'
+  })
+
+  const residualValueFallbackRates = computed(() => parseFallbackRates(
+    publicSettings.value?.theme_settings?.residualValueFallbackRates,
+  ))
 
   // 计算属性：页面布局配置
   const fullWidth = computed<boolean>(() => {
@@ -664,6 +679,9 @@ const useAppStore = defineStore('app', () => {
     live2dEnabled,
     live2dModelPath,
     live2dScale,
+    residualValueEnabled,
+    residualValueCurrency,
+    residualValueFallbackRates,
     fullWidth,
     maxPageWidth,
     cardProgressLayout,
