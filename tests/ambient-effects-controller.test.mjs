@@ -151,3 +151,28 @@ test('skips an unavailable Canvas context without scheduling', () => {
   assert.equal(petals.calls.remove, 1)
   assert.equal(warnings.length, 1)
 })
+
+test('skips a Canvas context that throws during acquisition', () => {
+  const frames = createFrameHarness()
+  const warnings = []
+  const canvas = {
+    getContext: () => {
+      throw new Error('context blocked')
+    },
+    remove: () => {},
+  }
+  const controller = effects.createAmbientEffectsController({
+    petalCanvas: canvas,
+    options: { ...desktopOptions(), cursorTrailEnabled: false },
+    dependencies: {
+      requestFrame: frames.requestFrame,
+      cancelFrame: frames.cancelFrame,
+      warn: message => warnings.push(message),
+    },
+  })
+
+  controller.resize(1440, 900, 1)
+  controller.start()
+  assert.equal(frames.hasPending(), false)
+  assert.equal(warnings.length, 1)
+})

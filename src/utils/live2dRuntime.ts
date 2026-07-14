@@ -59,7 +59,7 @@ function hasCubismCore(): boolean {
   return typeof window !== 'undefined' && 'Live2DCubismCore' in window
 }
 
-function loadCubismCore(signal?: AbortSignal): Promise<void> {
+function startCubismCoreLoad(): Promise<void> {
   if (hasCubismCore())
     return Promise.resolve()
   if (corePromise)
@@ -68,13 +68,10 @@ function loadCubismCore(signal?: AbortSignal): Promise<void> {
   corePromise = new Promise<void>((resolve, reject) => {
     const script = document.createElement('script')
     let settled = false
-    let onAbort = () => {}
-    const cleanup = () => signal?.removeEventListener('abort', onAbort)
     const fail = (error: unknown) => {
       if (settled)
         return
       settled = true
-      cleanup()
       script.remove()
       corePromise = null
       reject(error)
@@ -84,27 +81,58 @@ function loadCubismCore(signal?: AbortSignal): Promise<void> {
         return
       if (hasCubismCore()) {
         settled = true
-        cleanup()
         resolve()
       }
       else {
         fail(new Error('Cubism Core loaded without exposing Live2DCubismCore'))
       }
     }
-    onAbort = () => fail(new DOMException('Cubism Core loading aborted', 'AbortError'))
-    if (signal?.aborted) {
-      onAbort()
-      return
-    }
     script.src = CUBISM_CORE_URL
     script.async = true
     script.crossOrigin = 'anonymous'
     script.addEventListener('load', succeed, { once: true })
     script.addEventListener('error', () => fail(new Error(`Failed to load Cubism Core from ${CUBISM_CORE_URL}`)), { once: true })
-    signal?.addEventListener('abort', onAbort, { once: true })
     document.head.append(script)
   })
   return corePromise
+}
+
+export function loadLive2DCubismCore(signal?: AbortSignal): Promise<void> {
+  const sharedLoad = startCubismCoreLoad()
+  if (!signal)
+    return sharedLoad
+  if (signal.aborted)
+    return Promise.reject(new DOMException('Cubism Core loading aborted', 'AbortError'))
+
+  return new Promise<void>((resolve, reject) => {
+    let settled = false
+    let onAbort: () => void
+    const cleanup = () => signal.removeEventListener('abort', onAbort)
+    onAbort = () => {
+      if (settled)
+        return
+      settled = true
+      cleanup()
+      reject(new DOMException('Cubism Core loading aborted', 'AbortError'))
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    sharedLoad.then(
+      () => {
+        if (settled)
+          return
+        settled = true
+        cleanup()
+        resolve()
+      },
+      (error: unknown) => {
+        if (settled)
+          return
+        settled = true
+        cleanup()
+        reject(error)
+      },
+    )
+  })
 }
 
 async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live2DRenderer> {
@@ -278,7 +306,7 @@ async function createPixiRenderer(options: RendererFactoryOptions): Promise<Live
 
 export async function createLive2DRuntime(options: Live2DRuntimeOptions): Promise<Live2DHandle> {
   const dependencies = options.dependencies ?? {}
-  const loadCore = dependencies.loadCore ?? loadCubismCore
+  const loadCore = dependencies.loadCore ?? loadLive2DCubismCore
   const createRenderer = dependencies.createRenderer ?? createPixiRenderer
   const setTimer = dependencies.setTimer ?? ((callback, delay) => setTimeout(callback, delay))
   const clearTimer = dependencies.clearTimer ?? (handle => clearTimeout(handle))

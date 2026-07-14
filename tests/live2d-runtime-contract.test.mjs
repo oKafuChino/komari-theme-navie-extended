@@ -187,6 +187,46 @@ test('passes the owner signal to Core loading', async () => {
   handle.destroy()
 })
 
+test('does not cancel a shared Cubism Core load for a replacement caller', async () => {
+  const previousWindow = globalThis.window
+  const previousDocument = globalThis.document
+  const scripts = []
+  const createScript = () => {
+    const listeners = new Map()
+    return {
+      async: false,
+      crossOrigin: '',
+      src: '',
+      addEventListener: (type, listener) => listeners.set(type, listener),
+      remove: () => {},
+      dispatch: type => listeners.get(type)?.(),
+    }
+  }
+  globalThis.window = {}
+  globalThis.document = {
+    createElement: () => createScript(),
+    head: { append: script => scripts.push(script) },
+  }
+
+  try {
+    const isolatedRuntime = await vite.ssrLoadModule('/src/utils/live2dRuntime.ts?core-race-test')
+    const firstOwner = new AbortController()
+    const replacementOwner = new AbortController()
+    const firstLoad = isolatedRuntime.loadLive2DCubismCore(firstOwner.signal)
+    const replacementLoad = isolatedRuntime.loadLive2DCubismCore(replacementOwner.signal)
+    firstOwner.abort()
+    globalThis.window.Live2DCubismCore = {}
+    scripts[0].dispatch('load')
+
+    await assert.rejects(firstLoad, /aborted/)
+    await replacementLoad
+  }
+  finally {
+    globalThis.window = previousWindow
+    globalThis.document = previousDocument
+  }
+})
+
 test('destroys a renderer when its initial frame fails', async () => {
   for (const profile of [{ name: 'desktop', activeFps: 60, idleFps: 15 }, null]) {
     const harness = createHarness(profile)
@@ -220,7 +260,7 @@ test('guards Pixi initialization and frame updates with cleanup paths', async ()
   assert.match(source, /const renderFrame = \(\) => \{[\s\S]*try \{[\s\S]*model\.update/)
   assert.match(source, /catch \(error\) \{[\s\S]*options\.onFatal\(error\)/)
   assert.match(source, /WEBGL_lose_context/)
-  assert.match(source, /signal\?\.addEventListener\('abort'/)
+  assert.match(source, /signal\.addEventListener\('abort'/)
   assert.match(source, /script\.remove\(\)/)
   assert.doesNotMatch(source, /currentScale/)
   assert.doesNotMatch(source, /\*\s*\(\s*scale\s*\/\s*100\s*\)/)

@@ -271,10 +271,18 @@ export function createAmbientEffectsController(
     const canvas = layer === 'sakura' ? petalCanvas : trailCanvas
     if (!canvas)
       return null
-    const context = canvas.getContext('2d')
-    if (!context)
-      failLayer(layer, new Error('Canvas 2D context unavailable'))
-    return context
+    try {
+      const context = canvas.getContext('2d')
+      if (!context) {
+        failLayer(layer, new Error('Canvas 2D context unavailable'))
+        return null
+      }
+      return context
+    }
+    catch (error) {
+      failLayer(layer, error)
+      return null
+    }
   }
 
   petalContext = acquireContext('sakura')
