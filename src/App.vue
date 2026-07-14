@@ -4,6 +4,7 @@ import AmbientEffects from './components/AmbientEffects.vue'
 import Background from './components/Background.vue'
 import Footer from './components/Footer.vue'
 import Header from './components/Header.vue'
+import Live2DCompanion from './components/Live2DCompanion.vue'
 import LoadingCover from './components/LoadingCover.vue'
 import Provider from './components/Provider.vue'
 import { useAppStore } from './stores/app'
@@ -50,6 +51,7 @@ onUnmounted(() => {
   <Provider>
     <Background />
     <AmbientEffects v-if="!appStore.loading" />
+    <Live2DCompanion v-if="!appStore.loading" />
     <Transition
       enter-active-class="transition-all duration-100 ease-out"
       enter-from-class="opacity-0 backdrop-blur-0"

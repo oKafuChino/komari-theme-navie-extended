@@ -23,6 +23,8 @@
     "dayjs": "catalog:",
     "echarts": "catalog:",
     "pinia": "catalog:",
+    "pixi-live2d-display": "catalog:",
+    "pixi.js": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:"
   },

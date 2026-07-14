@@ -38,6 +38,8 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   TB: 2,
 }
 
+const DEFAULT_LIVE2D_MODEL_PATH = '/live2d/model/model.model3.json'
+
 export function resolveBooleanThemeSetting(
   settings: Record<string, unknown> | null | undefined,
   key: string,
@@ -124,6 +126,27 @@ const useAppStore = defineStore('app', () => {
 
   const cursorTrailEnabled = computed<boolean>(() => {
     return resolveBooleanThemeSetting(publicSettings.value?.theme_settings, 'cursorTrailEnabled', true)
+  })
+
+  const live2dEnabled = computed<boolean>(() => {
+    return resolveBooleanThemeSetting(publicSettings.value?.theme_settings, 'live2dEnabled', false)
+  })
+
+  const live2dModelPath = computed<string>(() => {
+    const value = publicSettings.value?.theme_settings?.live2dModelPath
+    if (typeof value !== 'string')
+      return DEFAULT_LIVE2D_MODEL_PATH
+    const path = value.trim()
+    if (!path.startsWith('/live2d/') || !path.toLowerCase().endsWith('.model3.json'))
+      return DEFAULT_LIVE2D_MODEL_PATH
+    return path
+  })
+
+  const live2dScale = computed<number>(() => {
+    const value = publicSettings.value?.theme_settings?.live2dScale
+    if (typeof value !== 'number' || !Number.isFinite(value))
+      return 100
+    return Math.min(150, Math.max(50, value))
   })
 
   // 计算属性：页面布局配置
@@ -638,6 +661,9 @@ const useAppStore = defineStore('app', () => {
     showLoginButton,
     sakuraEnabled,
     cursorTrailEnabled,
+    live2dEnabled,
+    live2dModelPath,
+    live2dScale,
     fullWidth,
     maxPageWidth,
     cardProgressLayout,

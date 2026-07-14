@@ -1,0 +1,19 @@
+Live2D Cubism Core
+==================
+
+File: live2dcubismcore.min.js
+Copyright: (C) 2019 Live2D Inc. All rights reserved.
+Source: https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js
+Retrieved: 2026-07-14
+SHA-256: 25AE938CB4FE282CE189B357BCC97E603D1E1F7EC78BF04150D401C23CDC792F
+Observed capability marker: Live2DCubismCore.MocVersion_50
+Upstream version label: not published by the unversioned Core endpoint; this
+exact redistributed artifact is identified by the retrieval date and SHA-256.
+
+The file identifies itself as "Redistributable Code" and is licensed under the
+Live2D Proprietary Software License Agreement:
+https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html
+
+Live2D Cubism Core is not covered by this repository's MIT License. Retain the
+copyright and license header embedded at the start of the runtime file when
+redistributing a built theme.
