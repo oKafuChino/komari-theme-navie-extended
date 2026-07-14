@@ -61,7 +61,14 @@ test('calculates, converts, sorts, caps, and isolates invalid nodes', () => {
   assert.equal(summary.includedCount, 4)
   assert.equal(summary.excludedCount, 4)
   assert.deepEqual(summary.rows.map(row => row.nodeName), [
-    'Full', 'Partial', 'Expired', 'Free', 'Once', 'Bad date', 'Unknown', 'Bad price',
+    'Full',
+    'Partial',
+    'Expired',
+    'Free',
+    'Once',
+    'Bad date',
+    'Unknown',
+    'Bad price',
   ])
   assert.equal(summary.rows[0].sourceValue, 20)
   assert.equal(summary.rows[0].targetValue, 144)

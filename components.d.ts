@@ -25,6 +25,7 @@ declare module 'vue' {
     NodeList: typeof import('./src/components/NodeList.vue')['default']
     PingChart: typeof import('./src/components/PingChart.vue')['default']
     Provider: typeof import('./src/components/Provider.vue')['default']
+    ResidualValueCalculator: typeof import('./src/components/ResidualValueCalculator.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TrafficProgress: typeof import('./src/components/TrafficProgress.vue')['default']
