@@ -8,7 +8,9 @@ async function source(path) {
 
 test('places the opt-in calculator before the theme action', async () => {
   const header = await source('src/components/Header.vue')
-  assert.match(header, /import ResidualValueCalculator from ['"]\.\/ResidualValueCalculator\.vue['"]/)
+  assert.match(header, /defineAsyncComponent/)
+  assert.match(header, /const ResidualValueCalculator = defineAsyncComponent\(\(\) => import\(['"]\.\/ResidualValueCalculator\.vue['"]\)\)/)
+  assert.doesNotMatch(header, /import ResidualValueCalculator from/)
   assert.match(header, /<ResidualValueCalculator\s+v-if="appStore\.residualValueEnabled"\s*\/>[\s\S]*<NPopover v-for="button in actionButtons"/)
 })
 

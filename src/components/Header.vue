@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { NAvatar, NButton, NFlex, NH3, NPopover } from 'naive-ui'
-import { computed, h, inject, ref } from 'vue'
+import { computed, defineAsyncComponent, h, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import LoginDialog from './LoginDialog.vue'
-import ResidualValueCalculator from './ResidualValueCalculator.vue'
+
+const ResidualValueCalculator = defineAsyncComponent(() => import('./ResidualValueCalculator.vue'))
 
 const router = useRouter()
 const appStore = useAppStore()
