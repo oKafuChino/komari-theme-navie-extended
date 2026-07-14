@@ -74,3 +74,11 @@ test('warns administrators not to activate or delete the resource theme', async 
   assert.match(guide, /保持.*相对.*目录/)
   assert.match(guide, /2048.*16 MiB/)
 })
+
+test('builds the resource template as a second fixed-name ZIP', async () => {
+  const vite = await text('vite.config.ts')
+  assert.match(vite, /komari-theme-naive-extended-build-\$\{commitHash\}\.zip/)
+  assert.match(vite, /komari-live2d-model-pack-template\.zip/)
+  assert.match(vite, /packaging[\\/]live2d-model-pack/)
+  assert.match(vite, /archive\.directory\(modelPackDistDir, 'dist'\)/)
+})

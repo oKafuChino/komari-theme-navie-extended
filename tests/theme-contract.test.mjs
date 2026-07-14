@@ -35,8 +35,10 @@ test('uses the Extended release artifact everywhere', async () => {
 
   assert.match(vite, /komari-theme-naive-extended-build-\$\{commitHash\}\.zip/)
   assert.match(workflow, /komari-theme-naive-extended-build\*\.zip/)
+  assert.match(workflow, /komari-live2d-model-pack-template\.zip/)
   assert.match(ignore, /^\.superpowers\/$/m)
   assert.match(ignore, /^komari-theme-naive-extended-build-\*\.zip$/m)
+  assert.match(ignore, /^komari-live2d-model-pack-template\.zip$/m)
   assert.match(readme, /Komari Naive Extended/)
   assert.match(readme, /lyimoexiao\/komari-theme-naive/)
 })

@@ -32,6 +32,36 @@ function getCommitHash(): string {
   }
 }
 
+interface ZipArchive {
+  pointer: () => number
+  on: (event: 'error', listener: (error: Error) => void) => ZipArchive
+  pipe: (output: NodeJS.WritableStream) => void
+  file: (source: string, data: { name: string }) => ZipArchive
+  directory: (source: string, destination: string) => ZipArchive
+  finalize: () => Promise<void>
+}
+
+function createZip(
+  outputPath: string,
+  displayName: string,
+  addEntries: (archive: ZipArchive) => void,
+): Promise<void> {
+  const output = fs.createWriteStream(outputPath)
+  const archive = archiver('zip', { zlib: { level: 9 } }) as ZipArchive
+  return new Promise((resolvePromise, reject) => {
+    output.on('close', () => {
+      const sizeMB = (archive.pointer() / 1024 / 1024).toFixed(2)
+      console.log(`[komari-theme-zip] Created ${displayName} (${sizeMB} MB)`)
+      resolvePromise()
+    })
+    output.on('error', reject)
+    archive.on('error', reject)
+    archive.pipe(output)
+    addEntries(archive)
+    void archive.finalize()
+  })
+}
+
 /**
  * Vite 插件：构建后打包 Komari 主题 Zip
  *
@@ -54,40 +84,33 @@ function komariThemeZip(): Plugin {
       const themeJsonPath = resolve(__dirname, 'komari-theme.json')
       const previewPath = resolve(__dirname, 'docs/preview.png')
       const outputPath = resolve(__dirname, zipFileName)
+      const modelPackRoot = resolve(__dirname, 'packaging/live2d-model-pack')
+      const modelPackManifest = resolve(modelPackRoot, 'komari-theme.json')
+      const modelPackPreview = resolve(modelPackRoot, 'preview.png')
+      const modelPackDistDir = resolve(modelPackRoot, 'dist')
+      const modelPackOutput = resolve(__dirname, 'komari-live2d-model-pack-template.zip')
+      const requiredInputs = [
+        distDir,
+        themeJsonPath,
+        previewPath,
+        modelPackManifest,
+        modelPackPreview,
+        modelPackDistDir,
+      ]
+      const missingInputs = requiredInputs.filter(path => !existsSync(path))
+      if (missingInputs.length > 0)
+        throw new Error(`[komari-theme-zip] Missing release input: ${missingInputs.join(', ')}`)
 
-      if (!existsSync(distDir)) {
-        console.log('[komari-theme-zip] dist directory not found, skipping zip creation')
-        return
-      }
-
-      const output = fs.createWriteStream(outputPath)
-      const archive = archiver('zip', { zlib: { level: 9 } })
-
-      return new Promise((resolve, reject) => {
-        output.on('close', () => {
-          const sizeMB = (archive.pointer() / 1024 / 1024).toFixed(2)
-          console.log(`[komari-theme-zip] Created ${zipFileName} (${sizeMB} MB)`)
-          resolve(undefined)
-        })
-
-        archive.on('error', (err: Error) => {
-          console.error('[komari-theme-zip] Error:', err)
-          reject(err)
-        })
-
-        archive.pipe(output)
-
-        if (existsSync(themeJsonPath)) {
-          archive.file(themeJsonPath, { name: 'komari-theme.json' })
-        }
-
-        if (existsSync(previewPath)) {
-          archive.file(previewPath, { name: 'preview.png' })
-        }
-
+      await createZip(outputPath, zipFileName, (archive) => {
+        archive.file(themeJsonPath, { name: 'komari-theme.json' })
+        archive.file(previewPath, { name: 'preview.png' })
         archive.directory(distDir, 'dist')
+      })
 
-        archive.finalize()
+      await createZip(modelPackOutput, 'komari-live2d-model-pack-template.zip', (archive) => {
+        archive.file(modelPackManifest, { name: 'komari-theme.json' })
+        archive.file(modelPackPreview, { name: 'preview.png' })
+        archive.directory(modelPackDistDir, 'dist')
       })
     },
   }
