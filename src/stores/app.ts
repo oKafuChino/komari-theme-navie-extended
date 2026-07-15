@@ -1,11 +1,18 @@
 import type { MeInfo, PublicSettings } from '@/utils/api'
 import type { ByteDecimalsConfig, UptimeFormat } from '@/utils/helper'
 import type { CurrencyCode } from '@/utils/residualValue'
+import type { ListViewColumn } from '@/utils/themeSettings'
 import { usePreferredDark, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { clampLive2DFollowStrength, normalizeLive2DModelPath } from '@/utils/live2dCompanion'
 import { parseFallbackRates } from '@/utils/residualValue'
+import {
+  normalizePublicUrl,
+  parseAllowedColumns,
+  parseColumnStyles,
+  resolveBooleanSetting,
+} from '@/utils/themeSettings'
 import { parseThreeNetworkSnapshots } from '@/utils/threeNetworkSnapshot'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
@@ -13,10 +20,6 @@ type Lang = 'zh-CN' | 'en-US'
 type NodeViewMode = 'card' | 'list'
 type RpcTransportMode = 'websocket' | 'http'
 type AlertType = 'default' | 'info' | 'success' | 'warning' | 'error'
-
-/** 默认的 List 视图列配置 */
-const DEFAULT_LIST_VIEW_COLUMNS = ['status', 'region', 'name', 'tags', 'uptime', 'os', 'cpu', 'mem', 'disk', 'traffic', 'rate'] as const
-type ListViewColumn = typeof DEFAULT_LIST_VIEW_COLUMNS[number]
 
 /** 默认的 List 视图列宽度配置 */
 const DEFAULT_LIST_COLUMN_WIDTHS: Record<string, string> = {
@@ -42,14 +45,7 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   TB: 2,
 }
 
-export function resolveBooleanThemeSetting(
-  settings: Record<string, unknown> | null | undefined,
-  key: string,
-  fallback: boolean,
-): boolean {
-  const value = settings?.[key]
-  return typeof value === 'boolean' ? value : fallback
-}
+export const resolveBooleanThemeSetting = resolveBooleanSetting
 
 const useAppStore = defineStore('app', () => {
   const loading = ref<boolean>(true)
@@ -206,32 +202,7 @@ const useAppStore = defineStore('app', () => {
 
   // 计算属性：List 视图显示列配置
   const listViewColumns = computed<ListViewColumn[]>(() => {
-    const settings = publicSettings.value?.theme_settings
-    const defaultColumns = [...DEFAULT_LIST_VIEW_COLUMNS]
-
-    if (!settings || typeof settings.listViewColumns !== 'string') {
-      return defaultColumns
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listViewColumns)
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        return defaultColumns
-      }
-
-      // 验证每个列名是否有效
-      const validColumns: ListViewColumn[] = []
-      for (const col of parsed) {
-        if (typeof col === 'string' && DEFAULT_LIST_VIEW_COLUMNS.includes(col as ListViewColumn)) {
-          validColumns.push(col as ListViewColumn)
-        }
-      }
-
-      return validColumns.length > 0 ? validColumns : defaultColumns
-    }
-    catch {
-      return defaultColumns
-    }
+    return parseAllowedColumns(publicSettings.value?.theme_settings?.listViewColumns)
   })
 
   // 计算属性：单分组时是否隐藏 Tab
@@ -245,32 +216,7 @@ const useAppStore = defineStore('app', () => {
 
   // 计算属性：List 视图列宽度配置
   const listColumnWidths = computed<Record<string, string>>(() => {
-    const settings = publicSettings.value?.theme_settings
-    const defaultWidths = { ...DEFAULT_LIST_COLUMN_WIDTHS }
-
-    if (!settings || typeof settings.listColumnWidths !== 'string') {
-      return defaultWidths
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listColumnWidths)
-      if (typeof parsed !== 'object' || parsed === null) {
-        return defaultWidths
-      }
-
-      // 合并配置，保留有效列的宽度
-      const mergedWidths = { ...defaultWidths }
-      for (const col of DEFAULT_LIST_VIEW_COLUMNS) {
-        if (typeof parsed[col] === 'string' && parsed[col].trim()) {
-          mergedWidths[col] = parsed[col].trim()
-        }
-      }
-
-      return mergedWidths
-    }
-    catch {
-      return defaultWidths
-    }
+    return { ...DEFAULT_LIST_COLUMN_WIDTHS, ...parseColumnStyles(publicSettings.value?.theme_settings?.listColumnWidths) }
   })
 
   // 计算属性：List 视图列间距配置
@@ -284,62 +230,12 @@ const useAppStore = defineStore('app', () => {
 
   // 计算属性：List 视图列内边距配置
   const listColumnPadding = computed<Record<string, string>>(() => {
-    const settings = publicSettings.value?.theme_settings
-    const defaultPadding: Record<string, string> = {}
-
-    if (!settings || typeof settings.listColumnPadding !== 'string') {
-      return defaultPadding
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listColumnPadding)
-      if (typeof parsed !== 'object' || parsed === null) {
-        return defaultPadding
-      }
-
-      // 提取有效的内边距配置
-      const validPadding: Record<string, string> = {}
-      for (const col of DEFAULT_LIST_VIEW_COLUMNS) {
-        if (typeof parsed[col] === 'string' && parsed[col].trim()) {
-          validPadding[col] = parsed[col].trim()
-        }
-      }
-
-      return validPadding
-    }
-    catch {
-      return defaultPadding
-    }
+    return parseColumnStyles(publicSettings.value?.theme_settings?.listColumnPadding)
   })
 
   // 计算属性：List 视图列外边距配置
   const listColumnMargin = computed<Record<string, string>>(() => {
-    const settings = publicSettings.value?.theme_settings
-    const defaultMargin: Record<string, string> = {}
-
-    if (!settings || typeof settings.listColumnMargin !== 'string') {
-      return defaultMargin
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listColumnMargin)
-      if (typeof parsed !== 'object' || parsed === null) {
-        return defaultMargin
-      }
-
-      // 提取有效的外边距配置
-      const validMargin: Record<string, string> = {}
-      for (const col of DEFAULT_LIST_VIEW_COLUMNS) {
-        if (typeof parsed[col] === 'string' && parsed[col].trim()) {
-          validMargin[col] = parsed[col].trim()
-        }
-      }
-
-      return validMargin
-    }
-    catch {
-      return defaultMargin
-    }
+    return parseColumnStyles(publicSettings.value?.theme_settings?.listColumnMargin)
   })
 
   // 计算属性：List 视图行高度配置
@@ -517,11 +413,7 @@ const useAppStore = defineStore('app', () => {
   })
 
   const icpUrl = computed<string>(() => {
-    const settings = publicSettings.value?.theme_settings
-    if (settings && typeof settings.icpUrl === 'string' && settings.icpUrl.trim()) {
-      return settings.icpUrl.trim()
-    }
-    return 'https://beian.miit.gov.cn/'
+    return normalizePublicUrl(publicSettings.value?.theme_settings?.icpUrl, 'https://beian.miit.gov.cn/')
   })
 
   // 计算属性：公安备案配置
@@ -542,11 +434,7 @@ const useAppStore = defineStore('app', () => {
   })
 
   const policeUrl = computed<string>(() => {
-    const settings = publicSettings.value?.theme_settings
-    if (settings && typeof settings.policeUrl === 'string' && settings.policeUrl.trim()) {
-      return settings.policeUrl.trim()
-    }
-    return ''
+    return normalizePublicUrl(publicSettings.value?.theme_settings?.policeUrl, '')
   })
 
   // 计算属性：自定义背景配置
@@ -570,19 +458,11 @@ const useAppStore = defineStore('app', () => {
   })
 
   const lightBackgroundUrl = computed<string>(() => {
-    const settings = publicSettings.value?.theme_settings
-    if (settings && typeof settings.lightBackgroundUrl === 'string') {
-      return settings.lightBackgroundUrl.trim()
-    }
-    return ''
+    return normalizePublicUrl(publicSettings.value?.theme_settings?.lightBackgroundUrl, '')
   })
 
   const darkBackgroundUrl = computed<string>(() => {
-    const settings = publicSettings.value?.theme_settings
-    if (settings && typeof settings.darkBackgroundUrl === 'string') {
-      return settings.darkBackgroundUrl.trim()
-    }
-    return ''
+    return normalizePublicUrl(publicSettings.value?.theme_settings?.darkBackgroundUrl, '')
   })
 
   const backgroundBlur = computed<number>(() => {

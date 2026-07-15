@@ -86,7 +86,7 @@ test('normalizes invalid Live2D settings to safe defaults', async () => {
     live2dScale: 100,
   } }
 
-  assert.equal(store.live2dModelPath, '/theme/komari-live2d-models/dist/model/XFZN.model3.json')
+  assert.equal(store.live2dModelPath, '/themes/komari-live2d-models/dist/model/model.model3.json')
 
   store.publicSettings = { theme_settings: { live2dFollowStrength: 200 } }
   assert.equal(store.live2dFollowStrength, 200)

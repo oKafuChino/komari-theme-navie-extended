@@ -6,6 +6,7 @@ import ThreeNetworkTcpMap from '@/components/ThreeNetworkTcpMap.vue'
 import { useAppStore } from '@/stores/app'
 import { getSharedApi } from '@/utils/api'
 import { buildThreeNetworkProvinceMap } from '@/utils/threeNetworkMap'
+import { runThreeNetworkSnapshot } from '@/utils/threeNetworkRun'
 import { saveThreeNetworkSnapshot } from '@/utils/threeNetworkSettings'
 import { THREE_NETWORK_TARGETS } from '@/utils/threeNetworkTargets'
 import { createThreeNetworkTaskRpc, runThreeNetworkTcpTest } from '@/utils/threeNetworkTcpTasks'
@@ -74,33 +75,29 @@ async function startTest() {
   error.value = ''
 
   try {
-    const values = await runThreeNetworkTcpTest({
-      uuid: props.uuid,
-      rpc: createThreeNetworkTaskRpc(),
-      signal: controller.signal,
-      onBatchResult: (result) => {
-        if (!previewValues.value)
-          return
-        for (const [offset, value] of result.values.entries()) {
-          previewValues.value[result.start + offset] = value
-        }
-        completedProvinces.value = Math.min(31, completedProvinces.value + 4)
+    await runThreeNetworkSnapshot({
+      initialValues: previewValues.value ?? emptyValues(),
+      runTasks: callbacks => runThreeNetworkTcpTest({
+        uuid: props.uuid,
+        rpc: createThreeNetworkTaskRpc(),
+        signal: controller?.signal,
+        onBatchResult: callbacks.onBatchResult,
+        onProgress: callbacks.onProgress,
+      }),
+      saveSnapshot: async (nextSnapshot: ThreeNetworkSnapshot) => {
+        await saveThreeNetworkSnapshot({
+          uuid: props.uuid,
+          snapshot: nextSnapshot,
+          currentSettings: appStore.publicSettings?.theme_settings,
+          writeSettings: settings => api.saveThemeSettings(appStore.publicSettings?.theme || 'NaiveExtended', settings),
+        })
       },
-      onProgress: (nextCompleted, nextFailures) => {
-        completed.value = nextCompleted
-        failures.value = nextFailures
+      onUpdate: (update) => {
+        previewValues.value = [...update.previewValues]
+        completed.value = update.completed
+        failures.value = update.failures
+        completedProvinces.value = Math.min(31, Math.ceil(update.completed / 3))
       },
-    })
-    const nextSnapshot: ThreeNetworkSnapshot = {
-      testedAt: new Date().toISOString(),
-      values,
-    }
-    const currentSettings = appStore.publicSettings?.theme_settings
-    await saveThreeNetworkSnapshot({
-      uuid: props.uuid,
-      snapshot: nextSnapshot,
-      currentSettings,
-      writeSettings: settings => api.saveThemeSettings(appStore.publicSettings?.theme || 'NaiveExtended', settings),
     })
     appStore.publicSettings = await api.getPublicSettings()
     window.$message.success('三网 TCP 延迟测试完成')

@@ -1,104 +1,11 @@
 <script setup lang="ts">
 import { NA, NCode, NImage, NText } from 'naive-ui'
 import { computed } from 'vue'
+import { parseMarkdown } from '@/utils/markdown'
 
 const props = defineProps<{
   content: string
 }>()
-
-/**
- * 解析 Markdown 文本为 token 数组
- */
-interface Token {
-  type: 'text' | 'bold' | 'italic' | 'link' | 'image' | 'code' | 'br'
-  content?: string
-  url?: string
-  alt?: string
-  children?: Token[]
-}
-
-function parseMarkdown(text: string): Token[] {
-  if (!text)
-    return []
-
-  const tokens: Token[] = []
-  let remaining = text
-
-  while (remaining.length > 0) {
-    // 图片：![alt](url)
-    const imageMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/)
-    if (imageMatch) {
-      tokens.push({ type: 'image', alt: imageMatch[1], url: imageMatch[2] })
-      remaining = remaining.slice(imageMatch[0].length)
-      continue
-    }
-
-    // 链接：[text](url)
-    const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/)
-    if (linkMatch) {
-      tokens.push({ type: 'link', content: linkMatch[1], url: linkMatch[2] })
-      remaining = remaining.slice(linkMatch[0].length)
-      continue
-    }
-
-    // 加粗：**text** 或 __text__
-    const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/) || remaining.match(/^__([^_]+)__/)
-    if (boldMatch) {
-      tokens.push({ type: 'bold', content: boldMatch[1] })
-      remaining = remaining.slice(boldMatch[0].length)
-      continue
-    }
-
-    // 斜体：*text* 或 _text_
-    const italicMatch = remaining.match(/^\*([^*]+)\*/) || remaining.match(/^_([^_]+)_/)
-    if (italicMatch) {
-      tokens.push({ type: 'italic', content: italicMatch[1] })
-      remaining = remaining.slice(italicMatch[0].length)
-      continue
-    }
-
-    // 行内代码：`code`
-    const codeMatch = remaining.match(/^`([^`]+)`/)
-    if (codeMatch) {
-      tokens.push({ type: 'code', content: codeMatch[1] })
-      remaining = remaining.slice(codeMatch[0].length)
-      continue
-    }
-
-    // 换行符
-    if (remaining[0] === '\n') {
-      tokens.push({ type: 'br' })
-      remaining = remaining.slice(1)
-      continue
-    }
-
-    // 普通文本：找到下一个特殊字符
-    const nextSpecial = remaining.search(/[![*_`\n]/)
-    if (nextSpecial === -1) {
-      // 转义 HTML
-      tokens.push({ type: 'text', content: escapeHtml(remaining) })
-      break
-    }
-    else if (nextSpecial === 0) {
-      // 特殊字符但未匹配，作为普通文本处理
-      tokens.push({ type: 'text', content: escapeHtml(remaining[0]!) })
-      remaining = remaining.slice(1)
-    }
-    else {
-      tokens.push({ type: 'text', content: escapeHtml(remaining.slice(0, nextSpecial)) })
-      remaining = remaining.slice(nextSpecial)
-    }
-  }
-
-  return tokens
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
 
 const tokens = computed(() => parseMarkdown(props.content))
 </script>

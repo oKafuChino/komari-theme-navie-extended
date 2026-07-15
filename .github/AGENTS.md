@@ -2,7 +2,7 @@
 
 ## Scope
 
-This file guides changes under `.github/` for `komari-theme-naive`. Keep edits focused on the existing CI workflow and the issue templates. Do not add general source-code rules here.
+This file guides changes under `.github/` for `komari-theme-naive-extended`. Keep edits focused on the existing CI workflow and the issue templates. Do not add general source-code rules here.
 
 ## CI workflow rules
 
@@ -10,20 +10,21 @@ The repo currently has one workflow at `.github/workflows/build-ci.yml`.
 
 Keep these behaviors intact unless the repository requirements clearly change:
 
-- Trigger on `push` to `master`
-- Trigger on `pull_request` targeting `master`
+- Trigger on `push` to `main`
+- Trigger on `pull_request` targeting `main`
 - Run on `ubuntu-latest`
 - Install pnpm with version `10`
 - Set up Node.js `24`
 - Run `pnpm install`
-- Run `pnpm build`
-- Upload artifacts matching `komari-theme-naive-build*.zip`
+- Run `pnpm test:unit`
+- Run `pnpm build`, including generated ZIP validation
+- Upload `release/komari-theme-naive-extended-build-*.zip` and `release/komari-live2d-model-pack-template.zip`
 
 ## CI editing expectations
 
-Preserve the current artifact naming pattern exactly. Downstream usage and release downloads expect `komari-theme-naive-build*.zip`.
+Preserve the current artifact naming pattern exactly. Downstream usage and release downloads expect `komari-theme-naive-extended-build-*.zip` and `komari-live2d-model-pack-template.zip`.
 
-Keep the workflow simple and repo-specific. Avoid adding matrix jobs, extra operating systems, extra package managers, release automation, or unrelated checks unless the repo actually needs them.
+Keep the workflow simple and repo-specific. Avoid matrix jobs, extra operating systems, extra package managers, release automation, or unrelated checks unless the repo actually needs them.
 
 If CI changes are necessary, prefer the smallest possible update that still keeps the build reliable for this theme project.
 
@@ -55,7 +56,7 @@ Do not add fields that ask for unrelated infrastructure details or generic proje
 Before changing `.github/` files, check that:
 
 - CI still builds the theme with pnpm 10 and Node 24
-- workflow triggers still target `master` pushes and pull requests
-- artifact uploads still use `komari-theme-naive-build*.zip`
+- workflow triggers still target `main` pushes and pull requests
+- artifact uploads use the two ZIP files under `release/`
 - issue templates still reflect real configuration and reporting paths for this theme
 - no extra GitHub workflow complexity has been introduced without a concrete repo need

@@ -1,103 +1,99 @@
-<h3 align="center"> Komari Naive Extended </h3>
-<p align="center">基于 Vue 3 + Vite + Naive UI 构建的 Komari Monitor 扩展主题</p>
-<a href="https://github.com/oKafuChino/komari-theme-navie-extended">
-<img src="docs/preview.png" alt="Komari Naive Extended" />
-</a>
+# 🌸 Komari Naive Extended
 
-本项目基于 [lyimoexiao/komari-theme-naive](https://github.com/lyimoexiao/komari-theme-naive) 开发，并保留原项目的 MIT 许可证与作者署名。
+<p align="center">
+  <a href="https://github.com/oKafuChino/komari-theme-navie-extended">
+    <img src="docs/preview.png" alt="Komari Naive Extended 主题预览" />
+  </a>
+</p>
 
-## 使用
+基于 [lyimoexiao/komari-theme-naive](https://github.com/lyimoexiao/komari-theme-naive) 扩展的 Komari Monitor 主题。保留 Naive UI 的监控信息密度，并增加环境特效、Live2D、剩余价值计算和三网 TCP 延迟地图。
 
-1. 从 [Release 页面](https://github.com/oKafuChino/komari-theme-navie-extended/releases) 下载最新的 `komari-theme-naive-extended-build-*.zip` 文件
-2. 登录 Komari Monitor 后，点击 `设置`，选择 `主题管理` 选项卡
-3. 点击 `上传主题` 按钮，选择下载的 `komari-theme-naive-extended-build-*.zip` 文件
-4. 刷新页面，即可看到新的主题
+## ✨ 功能
 
-## Live2D 看板娘
+- 卡片与列表双视图、分组、搜索、深浅色主题及大量后台显示配置。
+- 低负载樱花飘落与鼠标星轨，支持触摸设备和减少动态效果偏好。
+- 可选 Live2D 看板娘：固定于页面左下角，桌面跟随鼠标、触摸设备跟随按住的手指。
+- 可选剩余价值计算器：按节点公开的价格、周期、币种和剩余天数估算价值。
+- 三网 TCP 延迟：中国地图展示全国 31 个省级区域的移动、联通、电信 TCP 延迟；港澳台显示未测试。
 
-主题可在公共探针页面左下角显示管理员提供的 Cubism 3/4 Live2D 模型。该功能默认关闭，不修改 Komari 后端，也不会新增数据库、服务进程或服务端定时任务。
+## ✅ 环境要求
 
-安装模型：
+- Komari 1.2.6+
+- Node.js `^20.19.0` 或 `>=22.12.0`，仅开发主题时需要。
+- pnpm `^10.28.2`，仅开发主题时需要。
 
-1. 下载 `komari-live2d-model-pack-template.zip` 并解压。
-2. 将完整 Cubism 3/4 模型复制到资源包的 `dist/model/`，保持模型内部相对目录不变。
-3. 重新压缩根目录中的 `dist/`、`komari-theme.json` 和 `preview.png`，不要额外包一层父目录。
-4. 在 Komari 主题管理中上传资源包。该包的标识为 `komari-live2d-models`，请勿将它设为当前主题，也请勿删除。
-5. 安装并启用正常的 Komari Naive Extended 主主题。
-6. 在主主题设置中启用看板娘并填写浏览器中实际能够访问的模型入口。当前 Komari 通常使用 `/themes/komari-live2d-models/dist/model/model.model3.json`；部分旧版 Komari 使用单数路由，例如 `/theme/komari-live2d-models/dist/model/XFZN.model3.json`。主题同时支持这两种固定路由，嵌套入口同样受支持。
+Komari 的 `/admin` 与 `/terminal` 使用系统内置界面；本主题负责公开监控页和节点详情页。
 
-模型资源包只需首次安装。之后更新主主题只会替换 `NaiveExtended` 主题目录，不会删除独立的 `komari-live2d-models` 模型资源；重新上传或删除资源包才会替换或移除模型。
+## 📦 发布包
 
-资源包模板不包含任何角色模型。请仅部署你有权公开展示的模型；纹理内存与目录要求见资源包中的 `dist/model/README.txt`。资源包由 Komari 原生主题静态路由提供；当前版本通常为 `/themes/:id/*path`，部分旧版为 `/theme/:id/*path`。因此 Docker、1Panel、宝塔、systemd、二进制运行和反向代理部署均不需要额外路径配置。Komari 返回静态模型文件时会产生与文件大小相关的单次瞬时内存占用；压缩包体积不代表浏览器解码后的纹理内存，建议纹理不超过 2048x2048 并移除不需要的动作和声音。
+每次构建会在本地 `release/` 目录生成两个 ZIP：
 
-首次问候会由访客浏览器直接请求 `https://api64.ipify.org?format=json` 获取公网 IP。ipify 会接触该 IP；主题和 Komari 不会保存 IP，只在当前浏览器会话中保存“已问候”和“已关闭”标记。模型或 IP 服务失败不会影响探针页面。
+| 文件                                          | 用途                                           |
+| --------------------------------------------- | ---------------------------------------------- |
+| `komari-theme-naive-extended-build-<sha>.zip` | 主主题，上传并启用它。                         |
+| `komari-live2d-model-pack-template.zip`       | 可选的独立 Live2D 模型资源模板，只需安装一次。 |
 
-## 剩余价值计算器
+从 [Releases](https://github.com/oKafuChino/komari-theme-navie-extended/releases) 下载主主题 ZIP。发布者上传 GitHub Release 时，必须把主主题 ZIP 作为**第一个附件**；Komari 的仓库更新机制会下载最新 Release 的第一个附件。
 
-管理员可在主题设置中启用剩余价值计算器，并选择 CNY、USD、EUR 或 GBP 作为目标币种。计算只使用 Komari 已公开的价格、计费周期、币种和到期时间数据，并在访客浏览器中完成，不修改 Komari 后端。剩余天数复用探针页面已有显示，按完整天数向下取整。
+## 🚀 安装与更新
 
-访客首次打开计算器抽屉时，浏览器会通过 [jsDelivr](https://www.jsdelivr.com/) 获取开源 Currency API 汇率数据；主源失败时会尝试其 Cloudflare Pages 镜像，两者都失败才使用管理员配置的备用汇率。这些服务会接触访客 IP。有效汇率在浏览器缓存 12 小时，功能默认关闭，关闭或未打开抽屉时不会请求汇率。
+1. 在 Komari 后台进入 `设置` → `主题管理`。
+2. 上传 `komari-theme-naive-extended-build-<sha>.zip`。
+3. 将 `Komari Naive Extended` 设为当前主题并刷新公开页面。
+4. 后续更新主主题时仅上传新的主主题 ZIP；不会删除独立模型资源包中的模型。
 
-## 三网 TCP 延迟
+## 🎭 Live2D 模型资源包
 
-VPS 详情页提供“三网 TCP 延迟”标签，使用该 VPS 的 Komari Agent 连接全国 31 个省级区域的联通、移动、电信固定 TCP-Ping 目标，共 93 个 `*.ip.zstaticcdn.com:80` 地址。只有已登录管理员可以手动开始测试；访客只读取管理员最近一次完整结果，不会创建任务、轮询或发起探测。
+看板娘默认关闭。启用前先准备模型资源包：
 
-一次测试最多同时创建 12 个临时 TCP 任务；每个目标最多测试两轮，每轮从第 2 秒开始每秒轮询一次，最长等待 7 秒后立即删除任务，拿到有效记录会提前结束。只有完整结果才会保存到当前主题设置，管理员页面会按批次预览进度；中断或保存失败时保留上一次完整结果，单项无记录或连接失败显示为“失败”。该功能不修改 Komari 后端或 Agent，不新增服务、数据库表、定时任务或第三方依赖。
+1. 下载并解压 `komari-live2d-model-pack-template.zip`。
+2. 将完整 Cubism 3/4 模型复制到 `dist/model/`，保持模型内部相对目录不变。
+3. 重新压缩 ZIP 根目录中的 `dist/`、`komari-theme.json` 与 `preview.png`，不要增加额外父目录。
+4. 在主题管理中上传该资源包。它的固定标识是 `komari-live2d-models`，请勿将它设为当前主题，也请勿删除。
+5. 在主主题设置中开启 Live2D，并填写模型入口，例如 `/themes/komari-live2d-models/dist/model/model.model3.json`。嵌套模型目录同样可用。
 
-三网 TCP 延迟结果会离线渲染为中国地图：省份颜色取移动、联通、电信的有效延迟平均值；悬浮或轻触省份可按移动、联通、电信顺序查看明细。香港、澳门和台湾标为未测试。
+Komari 通过原生静态路由 `/themes/:id/*path` 提供资源包文件，因此 Docker、面板、systemd 和反向代理部署不需要额外路径规则。主主题更新只替换 `NaiveExtended`，不会覆盖 `komari-live2d-models`。
 
-主题设置中的“三网 TCP 延迟历史数据”由系统自动维护，用于确保 Komari 管理页面保存其他设置时仍保留访客结果，请勿手动编辑。
+模型资源包不含角色素材。只部署有权公开展示的模型；建议纹理不超过 `2048x2048`，移除不需要的动作和声音。Komari 读取静态模型文件时会产生与文件大小相关的单次瞬时内存占用，压缩包体积不等于浏览器解码后的纹理内存。
 
-## 环境要求
+首次问候会由访客浏览器请求 `https://api64.ipify.org?format=json` 获取公网 IP。ipify 会接触该 IP；主题和 Komari 不会保存 IP，只在当前浏览器会话保存“已问候”和“已关闭”标记。模型或 IP 服务不可用不会影响监控页面。
 
-- Node.js: `^20.19.0` 或 `>=22.12.0`
-- pnpm: `^10.28.2`
+## 💰 剩余价值计算器
 
-## 开发
+管理员可在主题设置中开启计算器，并选择 `CNY`、`USD`、`EUR` 或 `GBP`。计算在访客浏览器中完成，使用 Komari 已公开的价格、计费周期、币种和剩余天数；按完整天数向下取整，不修改 Komari 后端。
+
+访客首次打开抽屉时，浏览器会依次请求 jsDelivr 的 Currency API 和 Cloudflare Pages 镜像获取汇率；两者失败时才使用管理员设置的备用汇率。外部服务会接触访客 IP。有效汇率在本地缓存 12 小时，功能关闭或抽屉未打开时不会请求汇率。
+
+## 🗺️ 三网 TCP 延迟
+
+节点详情页提供“三网 TCP 延迟”标签。只有已登录管理员能开始测试；访客只读取管理员最近一次完整结果，不会创建任务、轮询或发起探测。
+
+- 测试由目标 VPS 的 Komari Agent 发起，固定访问全国 31 个省级区域的移动、联通、电信 `*.ip.zstaticcdn.com:80` 地址，共 `93` 个目标。
+- 每批最多创建 `12` 个临时 TCP 任务；任务创建后从第 2 秒开始每秒读取，最长等待 7 秒；无记录目标最多重试一轮。
+- 每轮任务立即删除，管理员地图按批次预览；取消或保存失败会保留上一次访客可见快照。
+- 地图按三家运营商的有效延迟平均值着色；详情始终按移动、联通、电信顺序显示，港澳台为未测试。
+
+该功能复用 Komari 现有 PingTask、记录和主题设置能力，不修改 Komari 后端或 Agent，不新增服务、数据库表、定时任务或第三方依赖。“三网 TCP 延迟历史数据”由主题自动维护，请勿手动编辑。
+
+## 🔒 隐私与安全
+
+- 主题管理中的动态配置会通过 `/api/public` 公开，切勿在任何主题设置中填写 Token、密码、私密 URL 或其他敏感数据。
+- 公告、备案和背景链接仅使用安全的站内或 HTTP(S) 地址；不安全地址会被忽略。
+- Live2D 模型仅允许从本机 Komari 的独立资源包目录加载，模型内部引用也必须保持在同一模型目录内。
+
+## 🧰 开发
 
 ```bash
-# 安装依赖
-pnpm i
-
-# 启动开发服务器
+pnpm install
 pnpm dev
-
-# 代码检查
+pnpm test:unit
+pnpm type-check
 pnpm lint
-```
-
-## 构建
-
-```bash
-# 类型检查 + 生产构建
 pnpm build
-
-# 预览生产构建
-pnpm preview
 ```
 
-## 技术栈
+`pnpm build` 会执行类型检查、生产构建，并验证 `release/` 内两个 ZIP 的内容。可用 `pnpm preview` 预览生产构建。
 
-| 类别      | 技术                                       |
-| --------- | ------------------------------------------ |
-| 框架      | Vue 3 (Composition API + `<script setup>`) |
-| 构建工具  | Vite 7                                     |
-| UI 组件库 | Naive UI                                   |
-| 状态管理  | Pinia 3                                    |
-| 路由      | Vue Router 5                               |
-| CSS 方案  | UnoCSS (Wind4 preset) + SCSS               |
-| 图表库    | ECharts + vue-echarts                      |
-| 代码规范  | ESLint (@antfu/eslint-config) + oxlint     |
-
-## 参考
-
-- [Komari](https://github.com/komari-monitor/komari)
-- [Komari Next](https://github.com/tonyliuzj/komari-next)
-- [Vue 3](https://vuejs.org/)
-- [Vite](https://vitejs.dev/)
-- [Naive UI](https://www.naiveui.com/)
-- [UnoCSS](https://unocss.dev/)
-
-## License
+## 📄 License
 
 [MIT](./LICENSE)
