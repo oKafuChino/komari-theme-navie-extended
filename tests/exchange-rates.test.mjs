@@ -23,20 +23,18 @@ function memoryStorage(initialValue = null) {
   }
 }
 
-test('parses and inverts a complete CNY Frankfurter response', () => {
-  const parsed = exchange.parseFrankfurterRates({
-    base: 'CNY',
-    date: '2026-07-14',
-    rates: { USD: 0.14, EUR: 0.12, GBP: 0.105 },
-  })
-  assert.deepEqual(parsed, {
+test('uses the jsDelivr Currency API and parses its CNY response', () => {
+  assert.match(exchange.EXCHANGE_RATE_URL, /^https:\/\/cdn\.jsdelivr\.net\/npm\/@fawazahmed0\/currency-api@latest\/v1\/currencies\/cny\.json$/)
+  assert.deepEqual(exchange.parseCurrencyApiRates({
+    date: '2026-07-15',
+    cny: { usd: 0.14, eur: 0.12, gbp: 0.105 },
+  }), {
     CNY: 1,
     USD: 1 / 0.14,
     EUR: 1 / 0.12,
     GBP: 1 / 0.105,
   })
-  assert.equal(exchange.parseFrankfurterRates({ base: 'USD', rates: {} }), null)
-  assert.equal(exchange.parseFrankfurterRates({ base: 'CNY', rates: { USD: 0, EUR: 1, GBP: 1 } }), null)
+  assert.equal(exchange.parseCurrencyApiRates({ cny: { usd: 0, eur: 1, gbp: 1 } }), null)
 })
 
 test('uses a valid cache without making a network request', async () => {
@@ -67,7 +65,7 @@ test('fetches, validates, and caches online rates with private request options',
       request = { url, options }
       return {
         ok: true,
-        json: async () => ({ base: 'CNY', rates: { USD: 0.14, EUR: 0.12, GBP: 0.1 } }),
+        json: async () => ({ cny: { usd: 0.14, eur: 0.12, gbp: 0.1 } }),
       }
     },
   })
@@ -83,6 +81,26 @@ test('fetches, validates, and caches online rates with private request options',
   assert.equal(cached.updatedAt, now)
   assert.equal(cached.expiresAt, now + exchange.EXCHANGE_RATE_CACHE_MS)
   assert.deepEqual(cached.rates, result.rates)
+})
+
+test('tries the Currency API mirror before using administrator fallback rates', async () => {
+  const requested = []
+  const result = await exchange.loadExchangeRates({
+    fallbackRates,
+    storage: null,
+    fetcher: async (url) => {
+      requested.push(url)
+      if (requested.length === 1)
+        throw new TypeError('primary blocked')
+      return {
+        ok: true,
+        json: async () => ({ cny: { usd: 0.14, eur: 0.12, gbp: 0.1 } }),
+      }
+    },
+  })
+
+  assert.deepEqual(requested, [exchange.EXCHANGE_RATE_URL, exchange.EXCHANGE_RATE_MIRROR_URL])
+  assert.equal(result.source, 'online')
 })
 
 test('ignores expired cache and falls back after invalid responses or unavailable storage', async () => {

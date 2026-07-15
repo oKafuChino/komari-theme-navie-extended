@@ -8,7 +8,7 @@ test('documents the administrator-only bounded TCP test', async () => {
   assert.match(readme, /三网 TCP 延迟/)
   assert.match(readme, /管理员/)
   assert.match(readme, /93/)
-  assert.match(readme, /24/)
+  assert.match(readme, /12/)
   assert.match(readme, /不修改 Komari 后端或 Agent/)
   assert.match(readme, /zstaticcdn\.com/)
 })

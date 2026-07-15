@@ -23,7 +23,8 @@ export interface LoadExchangeRatesOptions {
   timeoutMs?: number
 }
 
-export const EXCHANGE_RATE_URL = 'https://api.frankfurter.app/latest?from=CNY&to=USD,EUR,GBP'
+export const EXCHANGE_RATE_URL = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/cny.json'
+export const EXCHANGE_RATE_MIRROR_URL = 'https://latest.currency-api.pages.dev/v1/currencies/cny.json'
 export const EXCHANGE_RATE_CACHE_KEY = 'komari-naive-extended:residual-value:rates:v1'
 export const EXCHANGE_RATE_CACHE_MS = 12 * 60 * 60 * 1000
 
@@ -52,17 +53,17 @@ function defaultStorage(): Pick<Storage, 'getItem' | 'setItem'> | null {
   }
 }
 
-export function parseFrankfurterRates(value: unknown): ExchangeRates | null {
-  if (!isRecord(value) || value.base !== 'CNY' || !isRecord(value.rates))
+export function parseCurrencyApiRates(value: unknown): ExchangeRates | null {
+  if (!isRecord(value) || !isRecord(value.cny))
     return null
-  const { USD, EUR, GBP } = value.rates
-  if (!isPositiveFinite(USD) || !isPositiveFinite(EUR) || !isPositiveFinite(GBP))
+  const { usd, eur, gbp } = value.cny
+  if (!isPositiveFinite(usd) || !isPositiveFinite(eur) || !isPositiveFinite(gbp))
     return null
   return {
     CNY: 1,
-    USD: 1 / USD,
-    EUR: 1 / EUR,
-    GBP: 1 / GBP,
+    USD: 1 / usd,
+    EUR: 1 / eur,
+    GBP: 1 / gbp,
   }
 }
 
@@ -128,26 +129,32 @@ export async function loadExchangeRates(options: LoadExchangeRatesOptions): Prom
   const timeout = setTimeout(() => controller.abort(), Math.max(0, options.timeoutMs ?? 2500))
 
   try {
-    const response = await (options.fetcher ?? fetch)(EXCHANGE_RATE_URL, {
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer',
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-    if (!response.ok)
-      return fallback
-    const rates = parseFrankfurterRates(await response.json())
-    if (!rates)
-      return fallback
-    const updatedAt = now()
-    writeCachedExchangeRates(storage, {
-      rates,
-      updatedAt,
-      expiresAt: updatedAt + EXCHANGE_RATE_CACHE_MS,
-    })
-    return { rates, source: 'online', updatedAt }
-  }
-  catch {
+    for (const url of [EXCHANGE_RATE_URL, EXCHANGE_RATE_MIRROR_URL]) {
+      try {
+        const response = await (options.fetcher ?? fetch)(url, {
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        if (!response.ok)
+          continue
+        const rates = parseCurrencyApiRates(await response.json())
+        if (!rates)
+          continue
+        const updatedAt = now()
+        writeCachedExchangeRates(storage, {
+          rates,
+          updatedAt,
+          expiresAt: updatedAt + EXCHANGE_RATE_CACHE_MS,
+        })
+        return { rates, source: 'online', updatedAt }
+      }
+      catch {
+        if (controller.signal.aborted)
+          return fallback
+      }
+    }
     return fallback
   }
   finally {

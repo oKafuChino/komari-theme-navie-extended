@@ -5,7 +5,7 @@ import test from 'node:test'
 test('documents residual-value calculation and exchange-rate privacy behavior', async () => {
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8')
   assert.match(readme, /剩余价值计算器/)
-  assert.match(readme, /Frankfurter/)
+  assert.match(readme, /jsDelivr/)
   assert.match(readme, /访客.*IP/)
   assert.match(readme, /12 小时/)
   assert.match(readme, /备用汇率/)

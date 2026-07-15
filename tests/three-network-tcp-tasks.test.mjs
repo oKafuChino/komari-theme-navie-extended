@@ -12,7 +12,7 @@ after(async () => {
   await vite.close()
 })
 
-test('runs the fixed catalog in batches of 24 and rounds valid first records', async () => {
+test('runs the fixed catalog in batches of 12 and rounds valid first records', async () => {
   const { runThreeNetworkTcpTest } = await vite.ssrLoadModule('/src/utils/threeNetworkTcpTasks.ts')
   const calls = []
   const deleted = []
@@ -31,7 +31,7 @@ test('runs the fixed catalog in batches of 24 and rounds valid first records', a
         return { records: [{ task_id: id, time: '2026-07-15T00:00:00.000Z', value: 12.6 }] }
       },
       async deletePingTasks(ids) {
-        deleted.push(...ids)
+        deleted.push([...ids])
       },
     },
   })
@@ -43,7 +43,9 @@ test('runs the fixed catalog in batches of 24 and rounds valid first records', a
   assert.match(calls[24].target, /^fj-cu-v4\.ip\.zstaticcdn\.com:80$/)
   assert.equal(values.length, 93)
   assert.ok(values.every(value => value === 13))
-  assert.equal(deleted.length, 93)
+  assert.equal(deleted.length, 8)
+  assert.equal(deleted.flat().length, 93)
+  assert.ok(deleted.every(ids => ids.length <= 12))
 })
 
 test('isolates failed targets and rejects cancellation after cleaning created tasks', async () => {
@@ -65,7 +67,7 @@ test('isolates failed targets and rejects cancellation after cleaning created ta
       async getAllPingTasks() {
         return Array.from({ length: creates }, (_, index) => ({
           id: index + 1,
-          name: `naive-tcp-v1-node-1-1000-${index}`,
+          name: `naive-tcp-v1-node-1-1000-${index}-r1`,
         })).filter(task => task.id !== 2)
       },
       async getPingRecords() {
@@ -78,8 +80,8 @@ test('isolates failed targets and rejects cancellation after cleaning created ta
   })
 
   await assert.rejects(pending, { name: 'AbortError' })
-  assert.equal(creates, 24)
-  assert.deepEqual(deleted.sort((a, b) => a - b), [1, ...Array.from({ length: 22 }, (_, index) => index + 3)])
+  assert.equal(creates, 12)
+  assert.deepEqual(deleted.sort((a, b) => a - b), [1, ...Array.from({ length: 10 }, (_, index) => index + 3)])
 })
 
 test('cleans stale temporary tasks before creating a new run', async () => {
@@ -97,13 +99,13 @@ test('cleans stale temporary tasks before creating a new run', async () => {
         listed++
         if (listed === 1) {
           return [
-            { id: 90, name: 'naive-tcp-v1-node-1-1000-0' },
+            { id: 90, name: 'naive-tcp-v1-node-1-1000-0-r1' },
             { id: 91, name: 'unrelated-task' },
           ]
         }
         return Array.from({ length: 93 }, (_, index) => ({
           id: index + 1,
-          name: `naive-tcp-v1-node-1-1000000-${index}`,
+          name: `naive-tcp-v1-node-1-1000000-${index}-r1`,
         }))
       },
       async getPingRecords(id) {
@@ -167,8 +169,8 @@ test('reconciles and deletes tasks when listing fails after creation', async () 
     },
   }), /list failed after creation/)
 
-  assert.equal(created.length, 24)
-  assert.deepEqual(deleted, Array.from({ length: 24 }, (_, index) => index + 1))
+  assert.equal(created.length, 12)
+  assert.deepEqual(deleted, Array.from({ length: 12 }, (_, index) => index + 1))
 })
 
 test('reconciles tasks created server-side when the add response is lost', async () => {
@@ -198,6 +200,6 @@ test('reconciles tasks created server-side when the add response is lost', async
   })
 
   assert.equal(values.every(value => value === null), true)
-  assert.equal(created.length, 93)
-  assert.deepEqual(deleted, Array.from({ length: 93 }, (_, index) => index + 1))
+  assert.equal(created.length, 186)
+  assert.deepEqual(deleted, Array.from({ length: 186 }, (_, index) => index + 1))
 })

@@ -20,6 +20,8 @@ const api = getSharedApi()
 const isRunning = ref(false)
 const completed = ref(0)
 const failures = ref(0)
+const completedProvinces = ref(0)
+const previewValues = ref<(number | null)[] | null>(null)
 const error = ref('')
 let controller: AbortController | null = null
 
@@ -27,7 +29,23 @@ const snapshot = computed<ThreeNetworkSnapshot | undefined>(() => (
   appStore.threeNetworkTcpSnapshots.nodes[props.uuid]
 ))
 
-const provinceItems = computed(() => buildThreeNetworkProvinceMap(snapshot.value))
+const displaySnapshot = computed<ThreeNetworkSnapshot | undefined>(() => {
+  if (!previewValues.value)
+    return snapshot.value
+  return {
+    testedAt: new Date().toISOString(),
+    values: previewValues.value,
+  }
+})
+
+function emptyValues(): (number | null)[] {
+  const values: (number | null)[] = []
+  for (let index = 0; index < THREE_NETWORK_TARGETS.length; index++)
+    values.push(null)
+  return values
+}
+
+const provinceItems = computed(() => buildThreeNetworkProvinceMap(displaySnapshot.value))
 
 const testedAt = computed(() => {
   if (!snapshot.value)
@@ -51,6 +69,8 @@ async function startTest() {
   isRunning.value = true
   completed.value = 0
   failures.value = 0
+  completedProvinces.value = 0
+  previewValues.value = [...(snapshot.value?.values ?? emptyValues())]
   error.value = ''
 
   try {
@@ -58,6 +78,14 @@ async function startTest() {
       uuid: props.uuid,
       rpc: createThreeNetworkTaskRpc(),
       signal: controller.signal,
+      onBatchResult: (result) => {
+        if (!previewValues.value)
+          return
+        for (const [offset, value] of result.values.entries()) {
+          previewValues.value[result.start + offset] = value
+        }
+        completedProvinces.value = Math.min(31, completedProvinces.value + 4)
+      },
       onProgress: (nextCompleted, nextFailures) => {
         completed.value = nextCompleted
         failures.value = nextFailures
@@ -88,6 +116,8 @@ async function startTest() {
   finally {
     controller = null
     isRunning.value = false
+    previewValues.value = null
+    completedProvinces.value = 0
   }
 }
 
@@ -121,13 +151,13 @@ onBeforeUnmount(() => {
     <div v-if="isRunning" class="three-network__progress">
       <NProgress type="line" :percentage="progressPercentage" :show-indicator="false" />
       <NText :depth="3" class="text-xs">
-        已完成 {{ completed }} / {{ THREE_NETWORK_TARGETS.length }}，失败 {{ failures }}
+        已完成 {{ completedProvinces }} / 31 个省份，失败 {{ failures }}
       </NText>
     </div>
 
     <NAlert v-if="error" type="error" :title="error" class="mb-3" />
 
-    <NEmpty v-if="!snapshot" description="管理员尚未完成测试" class="py-12" />
+    <NEmpty v-if="!displaySnapshot" description="管理员尚未完成测试" class="py-12" />
 
     <ThreeNetworkTcpMap v-else :province-items="provinceItems" />
   </section>
