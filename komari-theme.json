@@ -77,6 +77,8 @@
       { "key": "residualValueEnabled", "name": "启用剩余价值计算器", "type": "switch", "default": false, "help": "在公共探针页面向访客显示所有 VPS 的剩余价值" },
       { "key": "residualValueCurrency", "name": "剩余价值目标币种", "type": "select", "default": "CNY", "options": "CNY,USD,EUR,GBP", "help": "将剩余价值统一换算为指定币种" },
       { "key": "residualValueFallbackRates", "name": "剩余价值备用汇率", "type": "string", "default": "{\"CNY\":1,\"USD\":7.2,\"EUR\":7.8,\"GBP\":9.2}", "help": "网络汇率不可用时使用；数值表示 1 单位币种等于多少人民币" },
+      { "name": "三网 TCP 延迟", "type": "title" },
+      { "key": "threeNetworkTcpSnapshots", "name": "三网 TCP 延迟历史数据", "type": "string", "default": "{\"version\":1,\"nodes\":{}}", "help": "系统自动维护，请勿手动修改；用于向访客显示管理员最近一次测试结果" },
       { "name": "自定义背景", "type": "title" },
       { "key": "backgroundEnabled", "name": "启用自定义背景", "type": "switch", "default": false, "help": "启用后可设置自定义图片或视频作为页面背景" },
       { "key": "backgroundType", "name": "背景类型", "type": "select", "default": "image", "options": "image,video", "help": "选择背景类型：图片或视频" },

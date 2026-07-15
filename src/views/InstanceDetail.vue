@@ -11,6 +11,7 @@ import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 // 异步组件：按需加载图表，减少首屏体积
 const LoadChart = defineAsyncComponent(() => import('@/components/LoadChart.vue'))
 const PingChart = defineAsyncComponent(() => import('@/components/PingChart.vue'))
+const ThreeNetworkTcpLatency = defineAsyncComponent(() => import('@/components/ThreeNetworkTcpLatency.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -28,8 +29,8 @@ const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byt
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, appStore.uptimeFormat)
 
-// 视图切换：load 或 ping
-const chartView = ref<'load' | 'ping'>('load')
+// 视图切换：负载、延迟或三网 TCP 延迟
+const chartView = ref<'load' | 'ping' | 'tcp-network'>('load')
 
 const data = computed(() => {
   return nodesStore.nodes.find(node => node.uuid === route.params.id)
@@ -230,6 +231,9 @@ const lightCardContrastEnabled = computed(() => appStore.lightCardContrast && !a
           </NTabPane>
           <NTabPane name="ping" tab="延迟">
             <PingChart :uuid="data.uuid" />
+          </NTabPane>
+          <NTabPane name="tcp-network" tab="三网 TCP 延迟">
+            <ThreeNetworkTcpLatency :uuid="data.uuid" :online="data.online" />
           </NTabPane>
         </NTabs>
       </div>

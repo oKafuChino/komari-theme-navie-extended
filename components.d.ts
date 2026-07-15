@@ -28,6 +28,7 @@ declare module 'vue' {
     ResidualValueCalculator: typeof import('./src/components/ResidualValueCalculator.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ThreeNetworkTcpLatency: typeof import('./src/components/ThreeNetworkTcpLatency.vue')['default']
     TrafficProgress: typeof import('./src/components/TrafficProgress.vue')['default']
   }
 }

@@ -6,6 +6,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { clampLive2DFollowStrength, normalizeLive2DModelPath } from '@/utils/live2dCompanion'
 import { parseFallbackRates } from '@/utils/residualValue'
+import { parseThreeNetworkSnapshots } from '@/utils/threeNetworkSnapshot'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
 type Lang = 'zh-CN' | 'en-US'
@@ -159,6 +160,10 @@ const useAppStore = defineStore('app', () => {
 
   const residualValueFallbackRates = computed(() => parseFallbackRates(
     publicSettings.value?.theme_settings?.residualValueFallbackRates,
+  ))
+
+  const threeNetworkTcpSnapshots = computed(() => parseThreeNetworkSnapshots(
+    publicSettings.value?.theme_settings?.threeNetworkTcpSnapshots,
   ))
 
   // 计算属性：页面布局配置
@@ -680,6 +685,7 @@ const useAppStore = defineStore('app', () => {
     residualValueEnabled,
     residualValueCurrency,
     residualValueFallbackRates,
+    threeNetworkTcpSnapshots,
     fullWidth,
     maxPageWidth,
     cardProgressLayout,

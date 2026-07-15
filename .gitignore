@@ -49,6 +49,7 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Theme build output
+release/
 komari-theme-naive-extended-build-*.zip
 komari-live2d-model-pack-template.zip
 

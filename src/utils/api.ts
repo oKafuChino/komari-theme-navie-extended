@@ -178,6 +178,25 @@ export interface PingRecordsResponse {
   tasks: PingTask[]
 }
 
+export interface AdminPingTaskDefinition {
+  name: string
+  type: 'tcp'
+  target: string
+  default_on: false
+  clients: string[]
+  interval: number
+}
+
+export interface AdminPingTask {
+  id: number
+  name: string
+  type?: string
+  target?: string
+  default_on?: boolean
+  clients?: string[]
+  interval?: number
+}
+
 /** 登录请求 */
 export interface LoginRequest {
   'username': string
@@ -341,6 +360,39 @@ export class KomariApi {
     }
   }
 
+  /**
+   * 发送管理员 POST 请求。
+   * Komari 的部分管理员接口成功时返回空响应，因此只检查 HTTP 状态。
+   */
+  private async postAdmin(path: string, body: unknown): Promise<void> {
+    const url = `${this.baseUrl}${path}`
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok)
+        throw new ApiError(`HTTP error: ${response.status}`, 'error', response.status)
+    }
+    catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof ApiError)
+        throw error
+      throw new ApiError(`Network error: ${error instanceof Error ? error.message : String(error)}`, 'error')
+    }
+  }
+
   // ===== 用户信息接口 =====
 
   /**
@@ -365,6 +417,24 @@ export class KomariApi {
    */
   async getVersion(): Promise<VersionInfo> {
     return this.get<VersionInfo>('/version')
+  }
+
+  // ===== 管理员主题与延迟任务 =====
+
+  async addPingTask(task: AdminPingTaskDefinition): Promise<void> {
+    await this.postAdmin('/admin/ping/add', task)
+  }
+
+  async getAllPingTasks(): Promise<AdminPingTask[]> {
+    return this.get<AdminPingTask[]>('/admin/ping')
+  }
+
+  async deletePingTasks(taskIds: number[]): Promise<void> {
+    await this.postAdmin('/admin/ping/delete', { id: taskIds })
+  }
+
+  async saveThemeSettings(theme: string, settings: Record<string, unknown>): Promise<void> {
+    await this.postAdmin(`/admin/theme/settings?theme=${encodeURIComponent(theme)}`, settings)
   }
 
   // ===== 登录/登出 =====

@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 import { execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
@@ -80,15 +80,16 @@ function komariThemeZip(): Plugin {
     closeBundle: async () => {
       const commitHash = getCommitHash()
       const zipFileName = `komari-theme-naive-extended-build-${commitHash}.zip`
+      const releaseDir = resolve(__dirname, 'release')
       const distDir = resolve(__dirname, 'dist')
       const themeJsonPath = resolve(__dirname, 'komari-theme.json')
       const previewPath = resolve(__dirname, 'docs/preview.png')
-      const outputPath = resolve(__dirname, zipFileName)
+      const outputPath = resolve(releaseDir, zipFileName)
       const modelPackRoot = resolve(__dirname, 'packaging/live2d-model-pack')
       const modelPackManifest = resolve(modelPackRoot, 'komari-theme.json')
       const modelPackPreview = resolve(modelPackRoot, 'preview.png')
       const modelPackDistDir = resolve(modelPackRoot, 'dist')
-      const modelPackOutput = resolve(__dirname, 'komari-live2d-model-pack-template.zip')
+      const modelPackOutput = resolve(releaseDir, 'komari-live2d-model-pack-template.zip')
       const requiredInputs = [
         distDir,
         themeJsonPath,
@@ -100,6 +101,8 @@ function komariThemeZip(): Plugin {
       const missingInputs = requiredInputs.filter(path => !existsSync(path))
       if (missingInputs.length > 0)
         throw new Error(`[komari-theme-zip] Missing release input: ${missingInputs.join(', ')}`)
+
+      mkdirSync(releaseDir, { recursive: true })
 
       await createZip(outputPath, zipFileName, (archive) => {
         archive.file(themeJsonPath, { name: 'komari-theme.json' })
