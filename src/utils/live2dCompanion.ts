@@ -58,6 +58,7 @@ export function resolveLive2DFocusTarget(
   clientY: number,
   viewportWidth: number,
   viewportHeight: number,
+  strength: unknown = 100,
 ): Live2DFocusTarget | null {
   if (
     !Number.isFinite(clientX)
@@ -72,9 +73,12 @@ export function resolveLive2DFocusTarget(
 
   const normalizedX = clamp(clientX / viewportWidth * 2 - 1, -1, 1)
   const normalizedY = clamp(1 - clientY / viewportHeight * 2, -1, 1)
+  const factor = clampLive2DFollowStrength(strength) / 100
+  if (factor === 0)
+    return { x: 0, y: 0 }
   return {
-    x: normalizedX * LIVE2D_FOCUS_X_AMPLITUDE,
-    y: normalizedY * LIVE2D_FOCUS_Y_AMPLITUDE,
+    x: normalizedX * LIVE2D_FOCUS_X_AMPLITUDE * factor,
+    y: normalizedY * LIVE2D_FOCUS_Y_AMPLITUDE * factor,
   }
 }
 
@@ -88,6 +92,12 @@ export function clampLive2DScale(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value))
     return 100
   return Math.min(150, Math.max(50, value))
+}
+
+export function clampLive2DFollowStrength(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    return 100
+  return Math.min(200, Math.max(0, value))
 }
 
 export interface Live2DViewportMetrics {

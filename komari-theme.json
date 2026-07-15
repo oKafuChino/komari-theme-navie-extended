@@ -72,6 +72,7 @@
       { "key": "live2dEnabled", "name": "启用 Live2D 看板娘", "type": "switch", "default": false, "help": "在公共探针页面显示管理员提供的 Live2D 看板娘" },
       { "key": "live2dModelPath", "name": "Live2D 模型入口", "type": "string", "default": "/themes/komari-live2d-models/dist/model/model.model3.json", "help": "填写当前 Komari 可访问的 /themes/ 或旧版 /theme/ 模型入口路径" },
       { "key": "live2dScale", "name": "Live2D 显示缩放", "type": "number", "default": 100, "help": "看板娘显示缩放百分比，运行时限制为 50-150" },
+      { "key": "live2dFollowStrength", "name": "Live2D 鼠标跟随幅度", "type": "number", "default": 100, "help": "鼠标与触摸跟随强度百分比，0-200；100 为默认效果，0 为关闭跟随" },
       { "name": "剩余价值计算器", "type": "title" },
       { "key": "residualValueEnabled", "name": "启用剩余价值计算器", "type": "switch", "default": false, "help": "在公共探针页面向访客显示所有 VPS 的剩余价值" },
       { "key": "residualValueCurrency", "name": "剩余价值目标币种", "type": "select", "default": "CNY", "options": "CNY,USD,EUR,GBP", "help": "将剩余价值统一换算为指定币种" },

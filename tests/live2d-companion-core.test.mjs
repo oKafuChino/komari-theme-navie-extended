@@ -43,6 +43,16 @@ test('normalizes page coordinates to subtle Live2D focus targets', () => {
   assert.deepEqual(core.resolveLive2DFocusTarget(2000, -500, 1000, 500), { x: 0.35, y: 0.22 })
 })
 
+test('scales Live2D focus targets by the configured follow strength', () => {
+  assert.deepEqual(core.resolveLive2DFocusTarget(0, 0, 1000, 500, 100), { x: -0.35, y: 0.22 })
+  assert.deepEqual(core.resolveLive2DFocusTarget(1000, 500, 1000, 500, 200), { x: 0.7, y: -0.44 })
+  assert.deepEqual(core.resolveLive2DFocusTarget(0, 0, 1000, 500, 0), { x: 0, y: 0 })
+  assert.equal(core.clampLive2DFollowStrength(-1), 0)
+  assert.equal(core.clampLive2DFollowStrength(250), 200)
+  assert.equal(core.clampLive2DFollowStrength('100'), 100)
+  assert.equal(core.clampLive2DFollowStrength(Number.POSITIVE_INFINITY), 100)
+})
+
 test('rejects unusable Live2D focus coordinates and viewports', () => {
   assert.equal(core.resolveLive2DFocusTarget(Number.NaN, 1, 100, 100), null)
   assert.equal(core.resolveLive2DFocusTarget(1, Number.POSITIVE_INFINITY, 100, 100), null)

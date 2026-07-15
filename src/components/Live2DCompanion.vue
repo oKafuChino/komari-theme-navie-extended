@@ -105,6 +105,7 @@ function applyPointerFocus(event: PointerEvent) {
     event.clientY,
     window.innerWidth,
     window.innerHeight,
+    appStore.live2dFollowStrength,
   )
   if (target)
     handle?.setFocus(target.x, target.y)
@@ -332,6 +333,7 @@ onMounted(() => {
       () => appStore.live2dEnabled,
       () => appStore.live2dModelPath,
       () => appStore.live2dScale,
+      () => appStore.live2dFollowStrength,
       finePointer,
       reducedMotion,
     ],

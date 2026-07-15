@@ -52,6 +52,8 @@ test('owns visibility, media-query, resize, and teardown lifecycle', async () =>
 test('tracks desktop and pressed touch pointers with passive global listeners', async () => {
   const component = await source('src/components/Live2DCompanion.vue')
   assert.match(component, /resolveLive2DFocusTarget/)
+  assert.match(component, /resolveLive2DFocusTarget\([\s\S]*appStore\.live2dFollowStrength/)
+  assert.match(component, /\(\) => appStore\.live2dFollowStrength/)
   assert.match(component, /window\.addEventListener\('pointermove', onPointerMove, \{ passive: true \}\)/)
   assert.match(component, /window\.addEventListener\('pointerdown', onPointerDown, \{ passive: true \}\)/)
   assert.match(component, /window\.addEventListener\('pointerup', onPointerEnd, \{ passive: true \}\)/)

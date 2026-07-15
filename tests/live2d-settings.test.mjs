@@ -39,6 +39,13 @@ test('declares the three Live2D settings', async () => {
     default: 100,
     help: '看板娘显示缩放百分比，运行时限制为 50-150',
   })
+  assert.deepEqual(items.find(item => item.key === 'live2dFollowStrength'), {
+    key: 'live2dFollowStrength',
+    name: 'Live2D 鼠标跟随幅度',
+    type: 'number',
+    default: 100,
+    help: '鼠标与触摸跟随强度百分比，0-200；100 为默认效果，0 为关闭跟随',
+  })
 })
 
 test('normalizes invalid Live2D settings to safe defaults', async () => {
@@ -80,6 +87,13 @@ test('normalizes invalid Live2D settings to safe defaults', async () => {
   } }
 
   assert.equal(store.live2dModelPath, '/theme/komari-live2d-models/dist/model/XFZN.model3.json')
+
+  store.publicSettings = { theme_settings: { live2dFollowStrength: 200 } }
+  assert.equal(store.live2dFollowStrength, 200)
+  store.publicSettings = { theme_settings: { live2dFollowStrength: -20 } }
+  assert.equal(store.live2dFollowStrength, 0)
+  store.publicSettings = { theme_settings: { live2dFollowStrength: '100' } }
+  assert.equal(store.live2dFollowStrength, 100)
 })
 
 test('declares the pinned runtime dependencies', async () => {

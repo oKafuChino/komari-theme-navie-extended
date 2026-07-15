@@ -4,7 +4,7 @@ import type { CurrencyCode } from '@/utils/residualValue'
 import { usePreferredDark, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { normalizeLive2DModelPath } from '@/utils/live2dCompanion'
+import { clampLive2DFollowStrength, normalizeLive2DModelPath } from '@/utils/live2dCompanion'
 import { parseFallbackRates } from '@/utils/residualValue'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
@@ -142,6 +142,10 @@ const useAppStore = defineStore('app', () => {
     if (typeof value !== 'number' || !Number.isFinite(value))
       return 100
     return Math.min(150, Math.max(50, value))
+  })
+
+  const live2dFollowStrength = computed<number>(() => {
+    return clampLive2DFollowStrength(publicSettings.value?.theme_settings?.live2dFollowStrength)
   })
 
   const residualValueEnabled = computed<boolean>(() => {
@@ -672,6 +676,7 @@ const useAppStore = defineStore('app', () => {
     live2dEnabled,
     live2dModelPath,
     live2dScale,
+    live2dFollowStrength,
     residualValueEnabled,
     residualValueCurrency,
     residualValueFallbackRates,
