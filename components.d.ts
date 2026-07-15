@@ -29,6 +29,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ThreeNetworkTcpLatency: typeof import('./src/components/ThreeNetworkTcpLatency.vue')['default']
+    ThreeNetworkTcpMap: typeof import('./src/components/ThreeNetworkTcpMap.vue')['default']
     TrafficProgress: typeof import('./src/components/TrafficProgress.vue')['default']
   }
 }

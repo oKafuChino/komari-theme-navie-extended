@@ -3,7 +3,7 @@ import antfu from '@antfu/eslint-config'
 export default antfu(
   {
     formatters: true,
-    ignores: ['docs/superpowers/**'],
+    ignores: ['docs/superpowers/**', 'public/maps/**/*.geo.json'],
     unocss: true,
     vue: true,
   },

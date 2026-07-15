@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { ThreeNetworkSnapshot } from '@/utils/threeNetworkSnapshot'
-import { NAlert, NButton, NEmpty, NProgress, NTag, NText } from 'naive-ui'
+import { NAlert, NButton, NEmpty, NProgress, NText } from 'naive-ui'
 import { computed, onBeforeUnmount, ref } from 'vue'
+import ThreeNetworkTcpMap from '@/components/ThreeNetworkTcpMap.vue'
 import { useAppStore } from '@/stores/app'
 import { getSharedApi } from '@/utils/api'
+import { buildThreeNetworkProvinceMap } from '@/utils/threeNetworkMap'
 import { saveThreeNetworkSnapshot } from '@/utils/threeNetworkSettings'
 import { THREE_NETWORK_TARGETS } from '@/utils/threeNetworkTargets'
 import { createThreeNetworkTaskRpc, runThreeNetworkTcpTest } from '@/utils/threeNetworkTcpTasks'
@@ -25,24 +27,7 @@ const snapshot = computed<ThreeNetworkSnapshot | undefined>(() => (
   appStore.threeNetworkTcpSnapshots.nodes[props.uuid]
 ))
 
-const provinceRows = computed(() => {
-  const rows = []
-  for (let index = 0; index < THREE_NETWORK_TARGETS.length; index += 3) {
-    const targets = THREE_NETWORK_TARGETS.slice(index, index + 3)
-    const first = targets[0]
-    if (!first)
-      continue
-    rows.push({
-      code: first.provinceCode,
-      name: first.provinceName,
-      cells: targets.map((target, offset) => ({
-        carrier: target.carrierName,
-        value: snapshot.value?.values[index + offset] ?? null,
-      })),
-    })
-  }
-  return rows
-})
+const provinceItems = computed(() => buildThreeNetworkProvinceMap(snapshot.value))
 
 const testedAt = computed(() => {
   if (!snapshot.value)
@@ -53,16 +38,6 @@ const testedAt = computed(() => {
 const successCount = computed(() => snapshot.value?.values.filter(value => value !== null).length ?? 0)
 const failureCount = computed(() => snapshot.value ? snapshot.value.values.length - successCount.value : 0)
 const progressPercentage = computed(() => Math.round(completed.value / THREE_NETWORK_TARGETS.length * 100))
-
-function latencyClass(value: number | null): string {
-  if (value === null)
-    return 'latency-muted'
-  if (value < 80)
-    return 'latency-good'
-  if (value <= 180)
-    return 'latency-warn'
-  return 'latency-bad'
-}
 
 function cancelTest() {
   controller?.abort()
@@ -154,33 +129,7 @@ onBeforeUnmount(() => {
 
     <NEmpty v-if="!snapshot" description="管理员尚未完成测试" class="py-12" />
 
-    <div v-else class="latency-table" role="table" aria-label="三网 TCP 延迟结果">
-      <div class="latency-row latency-row--head" role="row">
-        <div role="columnheader">
-          省份
-        </div>
-        <div role="columnheader">
-          联通
-        </div>
-        <div role="columnheader">
-          移动
-        </div>
-        <div role="columnheader">
-          电信
-        </div>
-      </div>
-      <div v-for="row in provinceRows" :key="row.code" class="latency-row" role="row">
-        <div class="latency-province" role="rowheader">
-          {{ row.name }}
-        </div>
-        <div v-for="cell in row.cells" :key="cell.carrier" class="latency-cell" role="cell">
-          <span class="latency-carrier">{{ cell.carrier }}</span>
-          <NTag :type="cell.value === null ? 'default' : undefined" size="small" :class="latencyClass(cell.value)" round>
-            {{ cell.value === null ? '失败' : `${cell.value} ms` }}
-          </NTag>
-        </div>
-      </div>
-    </div>
+    <ThreeNetworkTcpMap v-else :province-items="provinceItems" />
   </section>
 </template>
 
@@ -217,69 +166,6 @@ onBeforeUnmount(() => {
   margin-bottom: 12px;
 }
 
-.latency-table {
-  overflow: hidden;
-  border: 1px solid var(--n-border-color, rgba(128, 128, 128, 0.2));
-  border-radius: var(--border-radius, 8px);
-}
-
-.latency-row {
-  display: grid;
-  grid-template-columns: minmax(90px, 0.65fr) repeat(3, minmax(120px, 1fr));
-  min-height: 44px;
-  border-top: 1px solid var(--n-border-color, rgba(128, 128, 128, 0.16));
-}
-
-.latency-row:first-child {
-  border-top: 0;
-}
-
-.latency-row > div {
-  display: flex;
-  align-items: center;
-  padding: 8px 14px;
-  border-left: 1px solid var(--n-border-color, rgba(128, 128, 128, 0.12));
-}
-
-.latency-row > div:first-child {
-  border-left: 0;
-}
-
-.latency-row--head {
-  color: var(--n-text-color-2);
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(128, 128, 128, 0.08);
-}
-
-.latency-province {
-  font-weight: 600;
-}
-
-.latency-cell {
-  justify-content: center;
-}
-
-.latency-carrier {
-  display: none;
-}
-
-.latency-good {
-  color: #18a058;
-}
-
-.latency-warn {
-  color: #d89614;
-}
-
-.latency-bad {
-  color: #d03050;
-}
-
-.latency-muted {
-  opacity: 0.65;
-}
-
 @media (max-width: 640px) {
   .three-network__header {
     align-items: stretch;
@@ -288,46 +174,6 @@ onBeforeUnmount(() => {
 
   .three-network__actions :deep(.n-button) {
     width: 100%;
-  }
-
-  .latency-table {
-    display: grid;
-    gap: 10px;
-    overflow: visible;
-    border: 0;
-  }
-
-  .latency-row--head {
-    display: none;
-  }
-
-  .latency-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    overflow: hidden;
-    border: 1px solid var(--n-border-color, rgba(128, 128, 128, 0.18));
-    border-radius: var(--border-radius, 8px);
-  }
-
-  .latency-row > div,
-  .latency-row > div:first-child {
-    border: 0;
-    border-top: 1px solid var(--n-border-color, rgba(128, 128, 128, 0.12));
-  }
-
-  .latency-province {
-    border-top: 0 !important;
-    background: rgba(128, 128, 128, 0.08);
-  }
-
-  .latency-cell {
-    justify-content: space-between;
-  }
-
-  .latency-carrier {
-    display: inline;
-    color: var(--n-text-color-2);
-    font-size: 12px;
   }
 }
 </style>
