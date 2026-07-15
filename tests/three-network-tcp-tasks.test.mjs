@@ -48,6 +48,40 @@ test('runs the fixed catalog in batches of 12 and rounds valid first records', a
   assert.ok(deleted.every(ids => ids.length <= 12))
 })
 
+test('keeps tasks alive until delayed first records become visible', async () => {
+  const { runThreeNetworkTcpTest } = await vite.ssrLoadModule('/src/utils/threeNetworkTcpTasks.ts')
+  const readsByTask = new Map()
+  let listed = 0
+  const values = await runThreeNetworkTcpTest({
+    uuid: 'node-1',
+    now: () => 1000,
+    sleep: async () => {},
+    rpc: {
+      async addPingTask() {},
+      async getAllPingTasks() {
+        listed++
+        if (listed === 1)
+          return []
+        return Array.from({ length: 93 }, (_, index) => ({
+          id: index + 1,
+          name: `naive-tcp-v1-node-1-1000-${index}-r1`,
+        }))
+      },
+      async getPingRecords(id) {
+        const reads = (readsByTask.get(id) ?? 0) + 1
+        readsByTask.set(id, reads)
+        return reads >= 4
+          ? { records: [{ task_id: id, time: '2026-07-15T00:00:00.000Z', value: 12.6 }] }
+          : { records: [] }
+      },
+      async deletePingTasks() {},
+    },
+  })
+
+  assert.ok(values.every(value => value === 13))
+  assert.ok([...readsByTask.values()].every(reads => reads >= 4))
+})
+
 test('isolates failed targets and rejects cancellation after cleaning created tasks', async () => {
   const { runThreeNetworkTcpTest } = await vite.ssrLoadModule('/src/utils/threeNetworkTcpTasks.ts')
   const controller = new AbortController()

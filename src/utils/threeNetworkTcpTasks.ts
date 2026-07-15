@@ -5,6 +5,8 @@ import { THREE_NETWORK_TARGETS } from '@/utils/threeNetworkTargets'
 export const THREE_NETWORK_BATCH_SIZE = 12
 export const THREE_NETWORK_TASK_INTERVAL_SECONDS = 5
 export const THREE_NETWORK_ROUND_WAIT_MS = 2000
+export const THREE_NETWORK_ROUND_POLL_MS = 1000
+export const THREE_NETWORK_ROUND_MAX_WAIT_MS = 7000
 export const THREE_NETWORK_MAX_ROUNDS = 2
 export const THREE_NETWORK_STALE_TASK_MS = 5 * 60 * 1000
 
@@ -114,11 +116,15 @@ async function collectBatch(
   rpc: ThreeNetworkTcpTaskRpc,
   batchStartedAt: number,
   signal: AbortSignal | undefined,
+  wait: (milliseconds: number, signal?: AbortSignal) => Promise<void>,
 ): Promise<void> {
   let pending = [...tasks]
 
-  for (let attempt = 0; attempt < 1 && pending.length > 0; attempt++) {
+  const maxReads = 1 + Math.floor((THREE_NETWORK_ROUND_MAX_WAIT_MS - THREE_NETWORK_ROUND_WAIT_MS) / THREE_NETWORK_ROUND_POLL_MS)
+  for (let attempt = 0; attempt < maxReads && pending.length > 0; attempt++) {
     throwIfAborted(signal)
+    if (attempt > 0)
+      await wait(THREE_NETWORK_ROUND_POLL_MS, signal)
     const results = await Promise.all(pending.map(async (task) => {
       try {
         const result = await rpc.getPingRecords(task.id)
@@ -218,7 +224,7 @@ export async function runThreeNetworkTcpTest(options: ThreeNetworkTaskRunnerOpti
           throwIfAborted(options.signal)
           await wait(THREE_NETWORK_ROUND_WAIT_MS, options.signal)
           throwIfAborted(options.signal)
-          await collectBatch(created, values, options.rpc, batchStartedAt, options.signal)
+          await collectBatch(created, values, options.rpc, batchStartedAt, options.signal, wait)
           for (const task of created) {
             const offset = task.index - start
             batchValues[offset] = values[task.index] ?? null

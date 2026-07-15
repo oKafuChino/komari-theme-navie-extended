@@ -4,7 +4,7 @@
 
 **Goal:** 将三网 TCP 测试优化为最多 12 个并发任务、每个目标最多两轮，并在管理员页面渐进显示结果。
 
-**Architecture:** 任务执行器按 12 个目标分批运行；每轮等待 2 秒后读取并立即删除任务，只对缺失目标启动第二轮。执行器通过批次回调返回临时结果，组件将其合并到管理员本地预览；完整结果仍由现有快照保存流程一次性公开。
+**Architecture:** 任务执行器按 12 个目标分批运行；每轮从第 2 秒开始每秒轮询记录，最多等待 7 秒并立即删除任务，只对缺失目标启动第二轮。执行器通过批次回调返回临时结果，组件将其合并到管理员本地预览；完整结果仍由现有快照保存流程一次性公开。
 
 **Tech Stack:** Vue 3、TypeScript、Pinia、Komari 管理 REST/RPC、Node test runner。
 
@@ -12,7 +12,7 @@
 
 - 不修改 Komari 后端或 Agent。
 - 任何时刻本功能临时任务不超过 12 个。
-- 每个目标最多创建两轮任务，每轮等待 2000 ms 后立即删除。
+- 每个目标最多创建两轮任务，每轮从 2000 ms 开始每 1000 ms 轮询，最长等待 7000 ms 后立即删除。
 - 保持 93 个固定目标、目标顺序、快照 `version: 1` 和访客只读行为。
 - 取消、异常、页面卸载及列表失败必须继续执行任务名对账清理。
 - 只有完整测试完成后才覆盖公开快照。
@@ -27,7 +27,7 @@
 - `tests/three-network-component-contract.test.mjs`：渐进预览与访客被动展示契约。
 - `README.md`：更新测试轮次和连接行为说明。
 
-### Task 1: 重构任务执行器为两轮即时清理
+### Task 1: 重构任务执行器为两轮即时清理与受控轮询
 
 **Files:**
 - Modify: `src/utils/threeNetworkTcpTasks.ts`
@@ -35,7 +35,7 @@
 
 **Interfaces:**
 - Consumes: existing `ThreeNetworkTaskRpc` and `ThreeNetworkTaskRunnerOptions`。
-- Produces: `THREE_NETWORK_BATCH_SIZE = 12`, `THREE_NETWORK_ROUND_WAIT_MS = 2000`, and an optional `onBatchResult(result)` callback。
+- Produces: `THREE_NETWORK_BATCH_SIZE = 12`, `THREE_NETWORK_ROUND_WAIT_MS = 2000`, `THREE_NETWORK_ROUND_POLL_MS = 1000`, `THREE_NETWORK_ROUND_MAX_WAIT_MS = 7000`, and an optional `onBatchResult(result)` callback。
 
 - [ ] **Step 1: Write failing tests**
 
@@ -62,7 +62,7 @@ test('deletes each 12-task round and retries only missing targets once', async (
 
 Run: `node --test --test-concurrency=1 tests/three-network-tcp-tasks.test.mjs`
 
-Expected: FAIL because the current runner uses batch size 24, waits through five record attempts, deletes only in the finalizer, and has no batch-result callback.
+Expected: FAIL because the current runner reads at 2 seconds even though the task interval is 5 seconds, so a record that appears at the fifth-second poll is incorrectly reported as missing.
 
 - [ ] **Step 3: Implement one-round batch helper**
 
@@ -76,11 +76,11 @@ async function runTaskRound(
 ): Promise<{ values: Array<{ index: number, value: number | null }>, missing: typeof definitions }>
 ```
 
-The helper creates the definitions, resolves IDs by exact unique task name, waits `THREE_NETWORK_ROUND_WAIT_MS`, reads records once, and deletes all resolved task IDs in a `finally` block. It returns missing definitions for the second round.
+The helper creates the definitions, resolves IDs by exact unique task name, waits `THREE_NETWORK_ROUND_WAIT_MS`, then polls every `THREE_NETWORK_ROUND_POLL_MS` until a record is found or `THREE_NETWORK_ROUND_MAX_WAIT_MS` is reached. It deletes all resolved task IDs in a `finally` block and returns missing definitions for the second round.
 
 - [ ] **Step 4: Implement two-round orchestration**
 
-Set `THREE_NETWORK_BATCH_SIZE = 12`, `THREE_NETWORK_ROUND_WAIT_MS = 2000`, and `THREE_NETWORK_MAX_ROUNDS = 2`. For each batch, call `runTaskRound` once, call it again only with missing definitions, merge second-round values over first-round values, fill unresolved values with `null`, and invoke `onBatchResult` before advancing to the next batch. Keep the existing stale-task reconciliation around the whole run.
+Set `THREE_NETWORK_BATCH_SIZE = 12`, `THREE_NETWORK_ROUND_WAIT_MS = 2000`, `THREE_NETWORK_ROUND_POLL_MS = 1000`, `THREE_NETWORK_ROUND_MAX_WAIT_MS = 7000`, and `THREE_NETWORK_MAX_ROUNDS = 2`. For each batch, call `runTaskRound` once, call it again only with missing definitions, merge second-round values over first-round values, fill unresolved values with `null`, and invoke `onBatchResult` before advancing to the next batch. Keep the existing stale-task reconciliation around the whole run.
 
 - [ ] **Step 5: Run focused tests and verify green**
 
@@ -156,7 +156,7 @@ git commit -m "feat: preview three-network results by batch"
 
 - [ ] **Step 1: Update documentation**
 
-Add that tests run in batches of 12, each target is attempted at most twice, each round waits up to 2 seconds, and only the complete final result is published to visitors.
+Add that tests run in batches of 12, each target is attempted at most twice, each round begins reading at 2 seconds and polls once per second for at most 7 seconds, and only the complete final result is published to visitors.
 
 - [ ] **Step 2: Run all tests and lint**
 
