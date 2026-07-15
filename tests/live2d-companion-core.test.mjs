@@ -97,13 +97,30 @@ test('accepts only model entries inside the fixed Live2D resource pack', () => {
     )?.pathname,
     '/themes/komari-live2d-models/dist/model/%E6%99%BA%E4%B9%83/%E7%9C%8B%E6%9D%BF%E5%A8%98.model3.json',
   )
+  assert.equal(
+    core.resolveLive2DModelPath(
+      '/theme/komari-live2d-models/dist/model/XFZN.model3.json',
+      'https://site.test',
+    )?.href,
+    'https://site.test/theme/komari-live2d-models/dist/model/XFZN.model3.json',
+  )
+  assert.equal(
+    core.resolveLive2DModelPath(
+      '/theme/komari-live2d-models/dist/model/智乃/看板娘.model3.json',
+      'https://site.test',
+    )?.pathname,
+    '/theme/komari-live2d-models/dist/model/%E6%99%BA%E4%B9%83/%E7%9C%8B%E6%9D%BF%E5%A8%98.model3.json',
+  )
   assert.equal(core.resolveLive2DModelPath('/live2d/model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/other/dist/model/model.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/theme/other/dist/model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('https://evil.test/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/../x.model3.json', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/theme/komari-live2d-models/dist/model/../x.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/%2e%2e/x.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/a%5cb.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/model.model3.json?x=1', 'https://site.test'), null)
+  assert.equal(core.resolveLive2DModelPath('/theme/komari-live2d-models/dist/model/model.model3.json?x=1', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/model.model3.json#x', 'https://site.test'), null)
 })
 

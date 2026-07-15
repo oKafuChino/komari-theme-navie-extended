@@ -30,7 +30,7 @@ test('declares the three Live2D settings', async () => {
     name: 'Live2D 模型入口',
     type: 'string',
     default: '/themes/komari-live2d-models/dist/model/model.model3.json',
-    help: '独立 Live2D 资源包 dist/model/ 下的 Cubism 3/4 .model3.json 路径',
+    help: '填写当前 Komari 可访问的 /themes/ 或旧版 /theme/ 模型入口路径',
   })
   assert.deepEqual(items.find(item => item.key === 'live2dScale'), {
     key: 'live2dScale',
@@ -72,6 +72,14 @@ test('normalizes invalid Live2D settings to safe defaults', async () => {
 
   assert.equal(store.live2dEnabled, true)
   assert.equal(store.live2dModelPath, '/themes/komari-live2d-models/dist/model/chino/chino.model3.json')
+
+  store.publicSettings = { theme_settings: {
+    live2dEnabled: true,
+    live2dModelPath: '/theme/komari-live2d-models/dist/model/XFZN.model3.json',
+    live2dScale: 100,
+  } }
+
+  assert.equal(store.live2dModelPath, '/theme/komari-live2d-models/dist/model/XFZN.model3.json')
 })
 
 test('declares the pinned runtime dependencies', async () => {
