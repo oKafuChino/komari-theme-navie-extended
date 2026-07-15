@@ -8,6 +8,8 @@ Live2D 独立模型资源包
    Komari 1.2.6 及以上使用：
    /themes/komari-live2d-models/dist/model/model.model3.json
    /themes/komari-live2d-models/dist/model/chino/chino.model3.json
+   旧版 Komari 使用：
+   /theme/komari-live2d-models/dist/model/model.model3.json
 
 建议使用不超过 2048x2048 的纹理。单张未压缩 RGBA 纹理约占：
 - 2048x2048：16 MiB

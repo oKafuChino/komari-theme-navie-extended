@@ -6,8 +6,11 @@ export const LIVE2D_MESSAGES = [
 ] as const
 export const LIVE2D_FOCUS_X_AMPLITUDE = 0.35
 export const LIVE2D_FOCUS_Y_AMPLITUDE = 0.22
-export const LIVE2D_MODEL_PACK_PREFIX = '/themes/komari-live2d-models/dist/model/'
-export const DEFAULT_LIVE2D_MODEL_PATH = `${LIVE2D_MODEL_PACK_PREFIX}model.model3.json`
+export const LIVE2D_MODEL_PACK_PREFIXES = Object.freeze([
+  '/themes/komari-live2d-models/dist/model/',
+  '/theme/komari-live2d-models/dist/model/',
+] as const)
+export const DEFAULT_LIVE2D_MODEL_PATH = `${LIVE2D_MODEL_PACK_PREFIXES[0]}model.model3.json`
 
 export type Live2DProfileName = 'desktop' | 'touch'
 
@@ -175,7 +178,7 @@ export function isValidLive2DModelPath(value: unknown): value is string {
       && !resolved.password
       && !resolved.search
       && !resolved.hash
-      && resolved.pathname.startsWith(LIVE2D_MODEL_PACK_PREFIX)
+      && LIVE2D_MODEL_PACK_PREFIXES.some(prefix => resolved.pathname.startsWith(prefix))
       && resolved.pathname.toLowerCase().endsWith('.model3.json')
   }
   catch {
@@ -209,6 +212,24 @@ export function resolveLive2DModelPath(path: string, origin: string): URL | null
   catch {
     return null
   }
+}
+
+export function resolveLive2DModelPaths(path: string, origin: string): URL[] {
+  const primary = resolveLive2DModelPath(path, origin)
+  if (!primary)
+    return []
+
+  const currentPrefix = LIVE2D_MODEL_PACK_PREFIXES.find(prefix => primary.pathname.startsWith(prefix))
+  if (!currentPrefix)
+    return [primary]
+
+  const modelSuffix = primary.pathname.slice(currentPrefix.length)
+  const base = new URL(origin)
+  const fallbacks = LIVE2D_MODEL_PACK_PREFIXES
+    .filter(prefix => prefix !== currentPrefix)
+    .map(prefix => new URL(`${prefix}${modelSuffix}`, base))
+
+  return [primary, ...fallbacks]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
