@@ -10,6 +10,8 @@ export const THREE_NETWORK_ROUND_MAX_WAIT_MS = 7000
 export const THREE_NETWORK_MAX_ROUNDS = 2
 export const THREE_NETWORK_STALE_TASK_MS = 5 * 60 * 1000
 
+let hasActiveThreeNetworkRun = false
+
 export interface PingTaskDefinition {
   name: string
   type: 'tcp'
@@ -67,11 +69,10 @@ function throwIfAborted(signal?: AbortSignal): void {
     throw new DOMException('Cancelled', 'AbortError')
 }
 
-function temporaryTaskTimestamp(name: string, uuid: string): number | null {
-  const prefix = `naive-tcp-v1-${uuid}-`
-  if (!name.startsWith(prefix))
+function temporaryTaskTimestamp(name: string): number | null {
+  if (!name.startsWith('naive-tcp-v1-'))
     return null
-  const match = name.slice(prefix.length).match(/^(\d+)-\d+(?:-r\d+)?$/)
+  const match = name.match(/^naive-tcp-v1-.+-(\d+)-\d+(?:-r\d+)?$/)
   if (!match)
     return null
   const timestamp = Number(match[1])
@@ -98,13 +99,10 @@ function sleep(milliseconds: number, signal?: AbortSignal): Promise<void> {
   })
 }
 
-function readLatency(records: readonly PingRecord[], taskId: number, batchStartedAt: number): number | null {
+function readLatency(records: readonly PingRecord[], taskId: number): number | null {
   const matching = records
     .filter(record => record.task_id === taskId && Number.isFinite(record.value) && record.value >= 0)
-    .filter((record) => {
-      const timestamp = Date.parse(record.time)
-      return Number.isFinite(timestamp) && timestamp >= batchStartedAt
-    })
+    .filter(record => Number.isFinite(Date.parse(record.time)))
     .sort((left, right) => Date.parse(left.time) - Date.parse(right.time))[0]
 
   return matching ? Math.round(matching.value) : null
@@ -114,7 +112,6 @@ async function collectBatch(
   tasks: readonly CreatedTargetTask[],
   values: (number | null)[],
   rpc: ThreeNetworkTcpTaskRpc,
-  batchStartedAt: number,
   signal: AbortSignal | undefined,
   wait: (milliseconds: number, signal?: AbortSignal) => Promise<void>,
 ): Promise<void> {
@@ -128,7 +125,7 @@ async function collectBatch(
     const results = await Promise.all(pending.map(async (task) => {
       try {
         const result = await rpc.getPingRecords(task.id)
-        return { task, latency: readLatency(result.records, task.id, batchStartedAt) }
+        return { task, latency: readLatency(result.records, task.id) }
       }
       catch {
         return { task, latency: null }
@@ -149,7 +146,10 @@ export async function runThreeNetworkTcpTest(options: ThreeNetworkTaskRunnerOpti
   const uuid = options.uuid.trim()
   if (!uuid)
     throw new TypeError('A node UUID is required')
+  if (hasActiveThreeNetworkRun)
+    throw new Error('已有三网 TCP 延迟测试正在进行，请稍后再试')
 
+  hasActiveThreeNetworkRun = true
   const values = Array.from<(number | null)>({ length: THREE_NETWORK_TARGETS.length }).fill(null)
   const createdTaskIds: number[] = []
   const createdTaskNames = new Set<string>()
@@ -162,7 +162,7 @@ export async function runThreeNetworkTcpTest(options: ThreeNetworkTaskRunnerOpti
   try {
     const existingTasks = await options.rpc.getAllPingTasks()
     const temporaryTasks = existingTasks.flatMap((task) => {
-      const timestamp = temporaryTaskTimestamp(task.name, uuid)
+      const timestamp = temporaryTaskTimestamp(task.name)
       return timestamp === null || !Number.isInteger(task.id) || task.id <= 0
         ? []
         : [{ id: task.id, timestamp }]
@@ -224,7 +224,7 @@ export async function runThreeNetworkTcpTest(options: ThreeNetworkTaskRunnerOpti
           throwIfAborted(options.signal)
           await wait(THREE_NETWORK_ROUND_WAIT_MS, options.signal)
           throwIfAborted(options.signal)
-          await collectBatch(created, values, options.rpc, batchStartedAt, options.signal, wait)
+          await collectBatch(created, values, options.rpc, options.signal, wait)
           for (const task of created) {
             const offset = task.index - start
             batchValues[offset] = values[task.index] ?? null
@@ -260,26 +260,31 @@ export async function runThreeNetworkTcpTest(options: ThreeNetworkTaskRunnerOpti
     return values
   }
   finally {
-    const cleanupIds = new Set(createdTaskIds)
-    if (createdTaskNames.size > 0) {
-      try {
-        const remainingTasks = await options.rpc.getAllPingTasks()
-        for (const task of remainingTasks) {
-          if (createdTaskNames.has(task.name) && !deletedTaskNames.has(task.name) && Number.isInteger(task.id) && task.id > 0)
-            cleanupIds.add(task.id)
+    try {
+      const cleanupIds = new Set(createdTaskIds)
+      if (createdTaskNames.size > 0) {
+        try {
+          const remainingTasks = await options.rpc.getAllPingTasks()
+          for (const task of remainingTasks) {
+            if (createdTaskNames.has(task.name) && !deletedTaskNames.has(task.name) && Number.isInteger(task.id) && task.id > 0)
+              cleanupIds.add(task.id)
+          }
+        }
+        catch {
+          // Fall back to IDs resolved during the run. Unresolved tasks are retried as stale tasks next run.
         }
       }
-      catch {
-        // Fall back to IDs resolved during the run. Unresolved tasks are retried as stale tasks next run.
+      if (cleanupIds.size > 0) {
+        try {
+          await options.rpc.deletePingTasks([...cleanupIds])
+        }
+        catch {
+          // Stale task cleanup retries on the next administrator run.
+        }
       }
     }
-    if (cleanupIds.size > 0) {
-      try {
-        await options.rpc.deletePingTasks([...cleanupIds])
-      }
-      catch {
-        // Stale task cleanup retries on the next administrator run.
-      }
+    finally {
+      hasActiveThreeNetworkRun = false
     }
   }
 }

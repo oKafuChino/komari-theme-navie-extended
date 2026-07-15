@@ -16,6 +16,7 @@ test('accumulates batch failures and merges previews by absolute result index', 
   const run = await vite.ssrLoadModule('/src/utils/threeNetworkRun.ts')
   const updates = []
   let saved
+  let startedSaving = false
 
   const snapshot = await run.runThreeNetworkSnapshot({
     initialValues: [null, null, null, null],
@@ -28,11 +29,13 @@ test('accumulates batch failures and merges previews by absolute result index', 
       return [10, null, 20, null]
     },
     saveSnapshot: async (next) => { saved = next },
+    onBeforeSave: () => { startedSaving = true },
     onUpdate: update => updates.push(update),
   })
 
   assert.deepEqual(snapshot.values, [10, null, 20, null])
   assert.deepEqual(saved, snapshot)
+  assert.equal(startedSaving, true)
   assert.deepEqual(updates.at(-1), {
     completed: 4,
     failures: 2,
@@ -47,6 +50,25 @@ test('does not persist a snapshot when the underlying task runner is cancelled',
   await assert.rejects(run.runThreeNetworkSnapshot({
     initialValues: [null],
     runTasks: async () => { throw new DOMException('Cancelled', 'AbortError') },
+    saveSnapshot: async () => { saved = true },
+    onUpdate: () => {},
+  }), { name: 'AbortError' })
+
+  assert.equal(saved, false)
+})
+
+test('does not persist a completed task result when cancellation arrives before saving', async () => {
+  const run = await vite.ssrLoadModule('/src/utils/threeNetworkRun.ts')
+  const controller = new AbortController()
+  let saved = false
+
+  await assert.rejects(run.runThreeNetworkSnapshot({
+    initialValues: [null],
+    signal: controller.signal,
+    runTasks: async () => {
+      controller.abort()
+      return [10]
+    },
     saveSnapshot: async () => { saved = true },
     onUpdate: () => {},
   }), { name: 'AbortError' })

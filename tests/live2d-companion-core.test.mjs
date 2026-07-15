@@ -114,26 +114,6 @@ test('accepts only model entries inside the fixed Live2D resource pack', () => {
     )?.href,
     'https://site.test/theme/komari-live2d-models/dist/model/XFZN.model3.json',
   )
-  assert.deepEqual(
-    core.resolveLive2DModelPaths(
-      '/themes/komari-live2d-models/dist/model/chino/XFZN.model3.json',
-      'https://site.test',
-    ).map(url => url.pathname),
-    [
-      '/themes/komari-live2d-models/dist/model/chino/XFZN.model3.json',
-      '/theme/komari-live2d-models/dist/model/chino/XFZN.model3.json',
-    ],
-  )
-  assert.deepEqual(
-    core.resolveLive2DModelPaths(
-      '/theme/komari-live2d-models/dist/model/chino/XFZN.model3.json',
-      'https://site.test',
-    ).map(url => url.pathname),
-    [
-      '/theme/komari-live2d-models/dist/model/chino/XFZN.model3.json',
-      '/themes/komari-live2d-models/dist/model/chino/XFZN.model3.json',
-    ],
-  )
   assert.equal(core.resolveLive2DModelPath('/live2d/model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/other/dist/model/model.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/theme/other/dist/model/model.model3.json', 'https://site.test'), null)
@@ -143,7 +123,6 @@ test('accepts only model entries inside the fixed Live2D resource pack', () => {
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/a%5cb.model3.json', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/model.model3.json?x=1', 'https://site.test'), null)
   assert.equal(core.resolveLive2DModelPath('/themes/komari-live2d-models/dist/model/model.model3.json#x', 'https://site.test'), null)
-  assert.deepEqual(core.resolveLive2DModelPaths('/themes/komari-live2d-models/dist/model/../x.model3.json', 'https://site.test'), [])
 })
 
 test('normalizes invalid model-pack settings to the fixed default', () => {

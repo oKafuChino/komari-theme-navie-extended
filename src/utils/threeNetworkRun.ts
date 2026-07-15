@@ -14,12 +14,19 @@ export interface ThreeNetworkRunUpdate {
 export interface ThreeNetworkRunOptions {
   initialValues: readonly (number | null)[]
   now?: () => Date
+  signal?: AbortSignal
   runTasks: (callbacks: {
     onBatchResult: (result: ThreeNetworkBatchResult) => void
     onProgress: (completed: number, failureDelta: number) => void
   }) => Promise<(number | null)[]>
   saveSnapshot: (snapshot: ThreeNetworkSnapshot) => Promise<void>
+  onBeforeSave?: () => void
   onUpdate: (update: ThreeNetworkRunUpdate) => void
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted)
+    throw new DOMException('Cancelled', 'AbortError')
 }
 
 export async function runThreeNetworkSnapshot(options: ThreeNetworkRunOptions): Promise<ThreeNetworkSnapshot> {
@@ -40,6 +47,8 @@ export async function runThreeNetworkSnapshot(options: ThreeNetworkRunOptions): 
     },
   })
 
+  throwIfAborted(options.signal)
+  options.onBeforeSave?.()
   const snapshot: ThreeNetworkSnapshot = {
     testedAt: (options.now ?? (() => new Date()))().toISOString(),
     values,

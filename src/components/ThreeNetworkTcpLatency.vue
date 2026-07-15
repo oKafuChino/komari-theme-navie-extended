@@ -19,6 +19,7 @@ const props = defineProps<{
 const appStore = useAppStore()
 const api = getSharedApi()
 const isRunning = ref(false)
+const isSaving = ref(false)
 const completed = ref(0)
 const failures = ref(0)
 const completedProvinces = ref(0)
@@ -59,7 +60,8 @@ const failureCount = computed(() => snapshot.value ? snapshot.value.values.lengt
 const progressPercentage = computed(() => Math.round(completed.value / THREE_NETWORK_TARGETS.length * 100))
 
 function cancelTest() {
-  controller?.abort()
+  if (!isSaving.value)
+    controller?.abort()
 }
 
 async function startTest() {
@@ -68,6 +70,7 @@ async function startTest() {
 
   controller = new AbortController()
   isRunning.value = true
+  isSaving.value = false
   completed.value = 0
   failures.value = 0
   completedProvinces.value = 0
@@ -77,6 +80,7 @@ async function startTest() {
   try {
     await runThreeNetworkSnapshot({
       initialValues: previewValues.value ?? emptyValues(),
+      signal: controller.signal,
       runTasks: callbacks => runThreeNetworkTcpTest({
         uuid: props.uuid,
         rpc: createThreeNetworkTaskRpc(),
@@ -85,12 +89,16 @@ async function startTest() {
         onProgress: callbacks.onProgress,
       }),
       saveSnapshot: async (nextSnapshot: ThreeNetworkSnapshot) => {
+        const latestSettings = await api.getPublicSettings()
         await saveThreeNetworkSnapshot({
           uuid: props.uuid,
           snapshot: nextSnapshot,
-          currentSettings: appStore.publicSettings?.theme_settings,
-          writeSettings: settings => api.saveThemeSettings(appStore.publicSettings?.theme || 'NaiveExtended', settings),
+          currentSettings: latestSettings.theme_settings,
+          writeSettings: settings => api.saveThemeSettings(latestSettings.theme || 'NaiveExtended', settings),
         })
+      },
+      onBeforeSave: () => {
+        isSaving.value = true
       },
       onUpdate: (update) => {
         previewValues.value = [...update.previewValues]
@@ -113,13 +121,15 @@ async function startTest() {
   finally {
     controller = null
     isRunning.value = false
+    isSaving.value = false
     previewValues.value = null
     completedProvinces.value = 0
   }
 }
 
 onBeforeUnmount(() => {
-  controller?.abort()
+  if (!isSaving.value)
+    controller?.abort()
 })
 </script>
 
@@ -139,8 +149,8 @@ onBeforeUnmount(() => {
         <NButton v-if="!isRunning" type="primary" :disabled="!online" @click="startTest">
           {{ online ? '开始三网 TCP 测试' : '节点离线，无法测试' }}
         </NButton>
-        <NButton v-else secondary type="error" @click="cancelTest">
-          取消测试
+        <NButton v-else secondary type="error" :loading="isSaving" :disabled="isSaving" @click="cancelTest">
+          {{ isSaving ? '正在保存结果' : '取消测试' }}
         </NButton>
       </div>
     </div>

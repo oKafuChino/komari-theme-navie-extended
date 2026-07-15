@@ -9,7 +9,7 @@ import {
   pickLive2DMessage,
   readSessionFlag,
   resolveLive2DFocusTarget,
-  resolveLive2DModelPaths,
+  resolveLive2DModelPath,
   resolveLive2DProfile,
   resolveLive2DViewportMetrics,
   supportsLive2DWebGL,
@@ -202,8 +202,8 @@ async function initializeRuntime(version: number, controller: AbortController) {
   if (!targetCanvas || controller.signal.aborted || version !== loadVersion)
     return
 
-  const modelUrls = resolveLive2DModelPaths(appStore.live2dModelPath, window.location.origin)
-  if (modelUrls.length === 0) {
+  const modelUrl = resolveLive2DModelPath(appStore.live2dModelPath, window.location.origin)
+  if (!modelUrl) {
     warnOnce('[Live2D] invalid model path')
     return
   }
@@ -214,25 +214,13 @@ async function initializeRuntime(version: number, controller: AbortController) {
   })
 
   try {
-    let nextHandle: Live2DHandle | null = null
-    for (const [index, modelUrl] of modelUrls.entries()) {
-      try {
-        nextHandle = await createLive2DRuntime({
-          canvas: targetCanvas,
-          modelUrl,
-          profile,
-          signal: controller.signal,
-          dependencies: { warn: index === modelUrls.length - 1 ? warnOnce : () => {} },
-        })
-        break
-      }
-      catch {
-        if (controller.signal.aborted || version !== loadVersion)
-          return
-      }
-    }
-    if (!nextHandle)
-      return
+    const nextHandle = await createLive2DRuntime({
+      canvas: targetCanvas,
+      modelUrl,
+      profile,
+      signal: controller.signal,
+      dependencies: { warn: warnOnce },
+    })
     if (controller.signal.aborted || version !== loadVersion) {
       nextHandle.destroy()
       return

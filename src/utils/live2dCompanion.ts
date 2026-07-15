@@ -214,24 +214,6 @@ export function resolveLive2DModelPath(path: string, origin: string): URL | null
   }
 }
 
-export function resolveLive2DModelPaths(path: string, origin: string): URL[] {
-  const primary = resolveLive2DModelPath(path, origin)
-  if (!primary)
-    return []
-
-  const currentPrefix = LIVE2D_MODEL_PACK_PREFIXES.find(prefix => primary.pathname.startsWith(prefix))
-  if (!currentPrefix)
-    return [primary]
-
-  const modelSuffix = primary.pathname.slice(currentPrefix.length)
-  const base = new URL(origin)
-  const fallbacks = LIVE2D_MODEL_PACK_PREFIXES
-    .filter(prefix => prefix !== currentPrefix)
-    .map(prefix => new URL(`${prefix}${modelSuffix}`, base))
-
-  return [primary, ...fallbacks]
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

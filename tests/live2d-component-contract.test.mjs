@@ -47,8 +47,8 @@ test('owns visibility, media-query, resize, and teardown lifecycle', async () =>
   assert.match(component, /function removeEnvironmentListeners\(\)/)
   assert.match(component, /function hideForSession\(\)[\s\S]*removeEnvironmentListeners\(\)/)
   assert.match(component, /supportsLive2DWebGL/)
-  assert.match(component, /resolveLive2DModelPaths/)
-  assert.match(component, /for \(const \[index, modelUrl\] of modelUrls\.entries\(\)\)/)
+  assert.match(component, /resolveLive2DModelPath/)
+  assert.doesNotMatch(component, /resolveLive2DModelPaths/)
 })
 
 test('tracks desktop and pressed touch pointers with passive global listeners', async () => {
