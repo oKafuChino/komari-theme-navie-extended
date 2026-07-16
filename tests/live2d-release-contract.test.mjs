@@ -27,6 +27,7 @@ test('keeps character models and model guidance out of the main theme', async ()
 test('documents one-time model-pack installation and the no-backend boundary', async () => {
   const readme = await text('README.md')
   assert.match(readme, /komari-live2d-model-pack-template\.zip/)
+  assert.match(readme, /pnpm build:model-pack/)
   assert.match(readme, /komari-live2d-models/)
   assert.match(readme, /\/themes\/komari-live2d-models\/dist\/model\/model\.model3\.json/)
   assert.match(readme, /\/theme\/komari-live2d-models\/dist\/model\/model\.model3\.json/)

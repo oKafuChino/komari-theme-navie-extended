@@ -41,4 +41,3 @@ jobs:
           archive: false
           path: |
             release/komari-theme-naive-extended-build-*.zip
-            release/komari-live2d-model-pack-template.zip

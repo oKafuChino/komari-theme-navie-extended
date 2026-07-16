@@ -75,14 +75,18 @@ test('warns administrators not to activate or delete the resource theme', async 
   assert.match(guide, /2048.*16 MiB/)
 })
 
-test('builds the resource template as a second fixed-name ZIP', async () => {
+test('builds the resource template only through its explicit command', async () => {
   const vite = await text('vite.config.ts')
+  const pkg = await text('package.json')
+  const builder = await text('scripts/build-live2d-model-pack.mjs')
+
   assert.match(vite, /komari-theme-naive-extended-build-\$\{commitHash\}\.zip/)
-  assert.match(vite, /komari-live2d-model-pack-template\.zip/)
   assert.match(vite, /const releaseDir = resolve\(__dirname, 'release'\)/)
   assert.match(vite, /mkdirSync\(releaseDir, \{ recursive: true \}\)/)
   assert.match(vite, /resolve\(releaseDir, zipFileName\)/)
-  assert.match(vite, /resolve\(releaseDir, 'komari-live2d-model-pack-template\.zip'\)/)
-  assert.match(vite, /packaging[\\/]live2d-model-pack/)
-  assert.match(vite, /archive\.directory\(modelPackDistDir, 'dist'\)/)
+  assert.doesNotMatch(vite, /live2d-model-pack-template/)
+  assert.match(pkg, /"build:model-pack": "node scripts\/build-live2d-model-pack\.mjs/)
+  assert.match(builder, /komari-live2d-model-pack-template\.zip/)
+  assert.match(builder, /packaging[\\/]live2d-model-pack/)
+  assert.match(builder, /archive\.directory\(requiredInputs\[2\], 'dist'\)/)
 })

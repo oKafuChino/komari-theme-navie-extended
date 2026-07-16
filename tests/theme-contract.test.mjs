@@ -17,12 +17,12 @@ test('uses the independent Extended identity', async () => {
   const manifest = await readJson('komari-theme.json')
 
   assert.equal(pkg.name, 'komari-theme-naive-extended')
-  assert.equal(pkg.version, '1.0.0')
+  assert.equal(pkg.version, '1.0.2')
   assert.equal(pkg.author, 'lyimoexiao & oKafuChino')
   assert.equal(pkg.homepage, 'https://github.com/oKafuChino/komari-theme-navie-extended')
   assert.equal(manifest.name, 'Komari Naive Extended')
   assert.equal(manifest.short, 'NaiveExtended')
-  assert.equal(manifest.version, '1.0.0')
+  assert.equal(manifest.version, '1.0.2')
   assert.equal(manifest.author, 'lyimoexiao & oKafuChino')
   assert.equal(manifest.url, 'https://github.com/oKafuChino/komari-theme-navie-extended')
 })
@@ -35,7 +35,7 @@ test('uses the Extended release artifact everywhere', async () => {
 
   assert.match(vite, /komari-theme-naive-extended-build-\$\{commitHash\}\.zip/)
   assert.match(workflow, /release\/komari-theme-naive-extended-build-\*\.zip/)
-  assert.match(workflow, /release\/komari-live2d-model-pack-template\.zip/)
+  assert.doesNotMatch(workflow, /release\/komari-live2d-model-pack-template\.zip/)
   assert.match(ignore, /^\.superpowers\/$/m)
   assert.match(ignore, /^komari-theme-naive-extended-build-\*\.zip$/m)
   assert.match(ignore, /^komari-live2d-model-pack-template\.zip$/m)

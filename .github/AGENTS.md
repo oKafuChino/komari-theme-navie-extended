@@ -17,12 +17,12 @@ Keep these behaviors intact unless the repository requirements clearly change:
 - Set up Node.js `24`
 - Run `pnpm install`
 - Run `pnpm test:unit`
-- Run `pnpm build`, including generated ZIP validation
-- Upload `release/komari-theme-naive-extended-build-*.zip` and `release/komari-live2d-model-pack-template.zip`
+- Run `pnpm build`, including generated main-theme ZIP validation
+- Upload only `release/komari-theme-naive-extended-build-*.zip`
 
 ## CI editing expectations
 
-Preserve the current artifact naming pattern exactly. Downstream usage and release downloads expect `komari-theme-naive-extended-build-*.zip` and `komari-live2d-model-pack-template.zip`.
+Preserve the main-theme artifact naming pattern exactly. Downstream release downloads expect `komari-theme-naive-extended-build-*.zip`; the one-time Live2D model-pack template is built explicitly with `pnpm build:model-pack` and is never uploaded by the main-theme CI workflow.
 
 Keep the workflow simple and repo-specific. Avoid matrix jobs, extra operating systems, extra package managers, release automation, or unrelated checks unless the repo actually needs them.
 
@@ -57,6 +57,6 @@ Before changing `.github/` files, check that:
 
 - CI still builds the theme with pnpm 10 and Node 24
 - workflow triggers still target `main` pushes and pull requests
-- artifact uploads use the two ZIP files under `release/`
+- artifact uploads use only the main-theme ZIP under `release/`
 - issue templates still reflect real configuration and reporting paths for this theme
 - no extra GitHub workflow complexity has been introduced without a concrete repo need

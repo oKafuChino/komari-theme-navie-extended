@@ -223,23 +223,33 @@ test('refuses a different node while a recent three-network test is active', asy
 
 test('refuses a second node in the same browser before its first task is listed', async () => {
   const { runThreeNetworkTcpTest } = await vite.ssrLoadModule('/src/utils/threeNetworkTcpTasks.ts?local-run-lock')
-  let releaseFirstRun
-  let waits = 0
+  const controller = new AbortController()
+  let releaseInitialList
+  let markInitialListStarted
+  const initialListStarted = new Promise((resolve) => {
+    markInitialListStarted = resolve
+  })
+  let lists = 0
   const firstRun = runThreeNetworkTcpTest({
     uuid: 'node-1',
+    signal: controller.signal,
     now: () => 1_000_000,
-    sleep: async () => {
-      if (waits++ === 0)
-        await new Promise((resolve) => { releaseFirstRun = resolve })
-    },
     rpc: {
       async addPingTask() {},
-      async getAllPingTasks() { return [{ id: 1, name: 'naive-tcp-v1-node-1-1000000-0-r1' }] },
+      async getAllPingTasks() {
+        if (lists++ > 0)
+          return []
+        markInitialListStarted()
+        return new Promise((resolve) => {
+          releaseInitialList = () => resolve([])
+        })
+      },
       async getPingRecords() { return { records: [] } },
       async deletePingTasks() {},
     },
   })
 
+  await initialListStarted
   await assert.rejects(runThreeNetworkTcpTest({
     uuid: 'node-2',
     rpc: {
@@ -250,8 +260,9 @@ test('refuses a second node in the same browser before its first task is listed'
     },
   }), /已有三网 TCP 延迟测试正在进行/)
 
-  releaseFirstRun()
-  await firstRun
+  controller.abort()
+  releaseInitialList()
+  await assert.rejects(firstRun, { name: 'AbortError' })
 })
 
 test('reconciles and deletes tasks when listing fails after creation', async () => {

@@ -1,10 +1,12 @@
 import { execFileSync } from 'node:child_process'
 import { readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const releaseDir = resolve(root, 'release')
+const verifyModelPack = process.argv.includes('--model-pack')
 const themeArchivePattern = /^komari-theme-naive-extended-build-.+\.zip$/
 const modelArchiveName = 'komari-live2d-model-pack-template.zip'
 const requiredThemeEntries = [
@@ -54,11 +56,14 @@ function verifyArchive(path, name, required) {
 const theme = findLatestThemeArchive()
 verifyArchive(theme.path, theme.name, requiredThemeEntries)
 
-const modelPath = resolve(releaseDir, modelArchiveName)
-const modelEntries = verifyArchive(modelPath, modelArchiveName, requiredModelEntries)
-const leakedAsset = modelEntries.find(entry => forbiddenModelAsset.test(entry))
-if (leakedAsset)
-  throw new Error(`${modelArchiveName} must not include model asset: ${leakedAsset}`)
+if (verifyModelPack) {
+  const modelPath = resolve(releaseDir, modelArchiveName)
+  const modelEntries = verifyArchive(modelPath, modelArchiveName, requiredModelEntries)
+  const leakedAsset = modelEntries.find(entry => forbiddenModelAsset.test(entry))
+  if (leakedAsset)
+    throw new Error(`${modelArchiveName} must not include model asset: ${leakedAsset}`)
+}
 
 console.log(`[release-verify] verified ${theme.name}`)
-console.log(`[release-verify] verified ${modelArchiveName}`)
+if (verifyModelPack)
+  console.log(`[release-verify] verified ${modelArchiveName}`)

@@ -85,18 +85,10 @@ function komariThemeZip(): Plugin {
       const themeJsonPath = resolve(__dirname, 'komari-theme.json')
       const previewPath = resolve(__dirname, 'docs/preview.png')
       const outputPath = resolve(releaseDir, zipFileName)
-      const modelPackRoot = resolve(__dirname, 'packaging/live2d-model-pack')
-      const modelPackManifest = resolve(modelPackRoot, 'komari-theme.json')
-      const modelPackPreview = resolve(modelPackRoot, 'preview.png')
-      const modelPackDistDir = resolve(modelPackRoot, 'dist')
-      const modelPackOutput = resolve(releaseDir, 'komari-live2d-model-pack-template.zip')
       const requiredInputs = [
         distDir,
         themeJsonPath,
         previewPath,
-        modelPackManifest,
-        modelPackPreview,
-        modelPackDistDir,
       ]
       const missingInputs = requiredInputs.filter(path => !existsSync(path))
       if (missingInputs.length > 0)
@@ -108,12 +100,6 @@ function komariThemeZip(): Plugin {
         archive.file(themeJsonPath, { name: 'komari-theme.json' })
         archive.file(previewPath, { name: 'preview.png' })
         archive.directory(distDir, 'dist')
-      })
-
-      await createZip(modelPackOutput, 'komari-live2d-model-pack-template.zip', (archive) => {
-        archive.file(modelPackManifest, { name: 'komari-theme.json' })
-        archive.file(modelPackPreview, { name: 'preview.png' })
-        archive.directory(modelPackDistDir, 'dist')
       })
     },
   }

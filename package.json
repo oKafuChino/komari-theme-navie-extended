@@ -1,7 +1,7 @@
 {
   "name": "komari-theme-naive-extended",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "author": "lyimoexiao & oKafuChino",
   "license": "MIT",
   "homepage": "https://github.com/oKafuChino/komari-theme-navie-extended",
@@ -13,6 +13,7 @@
     "build": "run-p type-check \"build-only {@}\" -- && pnpm verify:release",
     "preview": "vite preview",
     "build-only": "vite build",
+    "build:model-pack": "node scripts/build-live2d-model-pack.mjs && pnpm verify:release -- --model-pack",
     "type-check": "vue-tsc --build",
     "test:unit": "node --test --test-concurrency=1 tests/*.test.mjs",
     "verify:release": "node scripts/verify-release.mjs",
